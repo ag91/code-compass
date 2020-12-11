@@ -12,17 +12,90 @@ I have presented some of the capabilities of *code-compass* in [[https://emacsco
 talk of EmacsConf2020]].
 
 ** Credits
+:PROPERTIES:
+:ID:       3d3fbd8e-ec09-4dbe-91aa-99713b6fac89
+:END:
 
 A significant part of this project relies on [[https://github.com/adamtornhill/code-maat][code-maat]] and the bright
 mind of his author Adam Tornhill. His books are inspiring and a
 [[https://pragprog.com/titles/atcrime/your-code-as-a-crime-scene/][suggested]] [[https://pragprog.com/titles/atevol/software-design-x-rays/][read]]. 
 
+** Installation and Dependencies
+:PROPERTIES:
+:CREATED:  [2020-12-11 Fri 19:10]
+:END:
+
+This project depends on the following external dependencies:
+
+- Python
+- Docker
+- code-maat
+- gnuplot/graph-cli
+
+And the following Emacs packages:
+
+- dash.el
+- f.el
+- s.el
+- simple-httpd
+
+
+If you use =use-package= and you are on a Linux system, this will take
+care of the Emacs installation:
+
+#+begin_src elisp :noeval
+(use-package dash)
+(use-package f)
+(use-package s)
+(use-package simple-httpd)
+
+(use-package code-compass
+  :load-path "~/.emacs.d/lisp")
+#+end_src
+
+For Docker, the Code Maat image and graph-cli run the following script:
+
+#+begin_src sh :noeval
+# see here for how to install in systems different from Linux Debian: https://gist.github.com/rstacruz/297fc799f094f55d062b982f7dac9e41
+sudo apt install docker.io;
+sudo systemctl start docker;
+# after you manage to run docker successfully
+git clone https://github.com/adamtornhill/code-maat.git;
+cd code-maat;
+docker build -t code-maat-app .
+
+cd /tmp;
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; # from here https://pip.pypa.io/en/stable/installing/
+python get-pip.py --user
+pip3 install --user graph-cli
+#+end_src
+
+** Limitations
+:PROPERTIES:
+:CREATED:  [2020-12-11 Fri 21:35]
+:END:
+
+The limitations I know:
+
+1. only Git support for now, but I am open to PRs (should be easy
+   because code-maat partially support other VCS already)
+
+2. Adam said that code-maat may fail for code bases larger than 5
+   million lines. Please report if you observe that is the case, we
+   will find a solution.
+
+3. most likely others I will eventually discover from the issues ;)
+
 ** Release Checklist
+:PROPERTIES:
+:ID:       8450da84-5aa9-46f9-b65c-5055ae907975
+:END:
 
 Releasing this in the wild is exciting, but it will take some time.
 Here what you can expect.
 
-*** TODO install instructions and dependencies
+*** DONE install instructions and dependencies
+https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-becoming-your-code-compass/
 *** TODO hotspots
 *** TODO software complexity
 *** TODO code churn
@@ -33,3 +106,11 @@ Here what you can expect.
 *** TODO code stability
 *** TODO fragmentation
 *** TODO word analysis
+** Contributing 
+:PROPERTIES:
+:CREATED:  [2020-12-11 Fri 21:40]
+:ID:       f1b0881f-1c66-49d6-ac46-aecd8dbe9e64
+:END:
+
+If you have ideas or wishes, just open an issue and I will look into
+it! Thanks for caring.
