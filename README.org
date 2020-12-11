@@ -1,0 +1,35 @@
+* Code compass
+:PROPERTIES:
+:ID:       1683c6ef-701e-476c-a104-56db5582c785
+:END:
+
+This package shall guide you in your software development within
+Emacs. For example, it will point at the code that requires your
+changes the most and it will suggest you who to ask for help when you
+are lost.
+
+I have presented some of the capabilities of *code-compass* in [[https://emacsconf.org/2020/talks/24/][this
+talk of EmacsConf2020]].
+
+** Credits
+
+A significant part of this project relies on [[https://github.com/adamtornhill/code-maat][code-maat]] and the bright
+mind of his author Adam Tornhill. His books are inspiring and a
+[[https://pragprog.com/titles/atcrime/your-code-as-a-crime-scene/][suggested]] [[https://pragprog.com/titles/atevol/software-design-x-rays/][read]]. 
+
+** Release Checklist
+
+Releasing this in the wild is exciting, but it will take some time.
+Here what you can expect.
+
+*** TODO install instructions and dependencies
+*** TODO hotspots
+*** TODO software complexity
+*** TODO code churn
+*** TODO change coupling
+*** TODO use case of coupling: find coupled files
+*** TODO code communication
+*** TODO code knowledge
+*** TODO code stability
+*** TODO fragmentation
+*** TODO word analysis
