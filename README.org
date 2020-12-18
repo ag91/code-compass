@@ -138,7 +138,15 @@ Here what you can expect.
 
 *** DONE install instructions and dependencies
 https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-becoming-your-code-compass/
-*** TODO hotspots
+*** DONE hotspots
+:PROPERTIES:
+:CREATED:  [2020-12-18 Fri 18:01]
+:ID:       00f4d809-e7e0-4f29-a2af-30fa07a080e7
+:END:
+:LOGBOOK:
+CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
+:END:
+https://ag91.github.io/blog/2020/12/18/emacs-as-your-code-compass-finding-code-hotspots/
 *** TODO software complexity
 *** TODO code churn
 *** TODO change coupling
