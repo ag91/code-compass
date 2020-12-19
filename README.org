@@ -177,5 +177,13 @@ it! Thanks for caring.
 - [[https://github.com/textarcana/code-risk/tree/master/bin][code-risk]]: this is a set of scripts Noah Sussman's uses to find
   quality issues in repositories. Code-compass includes these and make
   them easily accessible to you.
+- [[https://github.com/smontanari/code-forensics][code-forensics]]: this makes available code-maat analyses in a node
+  application. Code-compass offers a subset of these for now and
+  focuses more on supporting you while you edit your project. (Thanks
+  @BlankSpruce to share this repository!)
+- [[https://github.com/aspiers/git-deps/][git-deps]]: this shows you dependencies between git commits. Hopefully
+  code-compass will integrate this project to help you when, for
+  example, you are struggling to identify the commit that broke your
+  release.
 - ???
   
