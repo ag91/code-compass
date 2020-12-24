@@ -3,8 +3,8 @@
 ;; Copyright (C) 2020 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
-;; Version: 0.0.1
-;; Package-Version: 20201215
+;; Version: 0.0.2
+;; Package-Version: 20201224
 ;; Keywords: emacs, sofware, analysis
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -48,6 +48,11 @@
 (defcustom c/default-periods
   '("beginning" "1d" "2d" "3d" "6d" "12d" "18d" "24d" "1m" "2m" "6m")
   "A list of choices for starting date for reducing the Git log for analysis. 'beginning' is a keyword to say to not reduce.'Nd' means to start after N days, where N is a positive number. 'Nm' means to start after N months, where N is a positive number."
+  :group 'code-compass)
+
+(defcustom c/snapshot-periods
+  '("1d" "3m" "6m" "9m" "12m" "15m")
+  "A list of snapshots periods to show evolution of analyses over time."
   :group 'code-compass)
 
 (defcustom c/code-maat-command
@@ -3124,7 +3129,12 @@ d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
     (call-interactively 'c/request-date)))
   (c/async-run 'c/show-hotspots-sync repository date port))
 
-
+(defun c/show-hotspot-snapshot-sync (repository)
+  "Snapshot COMMAND over REPOSITORY over the last year every three months."
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))))
+  (--each c/snapshot-periods (c/show-hotspots-sync repository (c/request-date it) 8888)))
 
 (provide 'code-compass)
 ;;; code-compass ends here

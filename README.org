@@ -137,7 +137,7 @@ Releasing this in the wild is exciting, but it will take some time.
 Here what you can expect.
 
 *** DONE install instructions and dependencies
-https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-becoming-your-code-compass/
+- https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-becoming-your-code-compass/
 *** DONE hotspots
 :PROPERTIES:
 :CREATED:  [2020-12-18 Fri 18:01]
@@ -146,8 +146,12 @@ https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-b
 :LOGBOOK:
 CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :END:
-https://ag91.github.io/blog/2020/12/18/emacs-as-your-code-compass-finding-code-hotspots/
+- hotspots analysis: https://ag91.github.io/blog/2020/12/18/emacs-as-your-code-compass-finding-code-hotspots/
+- hotspots evolution: https://ag91.github.io/blog/2020/12/24/emacs-as-your-code-compass-looking-at-hotspots-evolution/
 *** TODO software complexity
+:LOGBOOK:
+CLOCK: [2020-12-24 Thu 17:50]
+:END:
 *** TODO code churn
 *** TODO change coupling
 *** TODO use case of coupling: find coupled files
