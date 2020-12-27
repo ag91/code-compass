@@ -148,11 +148,17 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :END:
 - hotspots analysis: https://ag91.github.io/blog/2020/12/18/emacs-as-your-code-compass-finding-code-hotspots/
 - hotspots evolution: https://ag91.github.io/blog/2020/12/24/emacs-as-your-code-compass-looking-at-hotspots-evolution/
-*** TODO software complexity
-:LOGBOOK:
-CLOCK: [2020-12-24 Thu 17:50]
+*** DONE software complexity
+:PROPERTIES:
+:ID:       6847956b-75c1-4ad7-b911-1994a21a26ac
+:CREATED:  [2020-12-27 Sun 14:10]
 :END:
+- https://ag91.github.io/blog/2020/12/27/emacs-as-your-code-compass-how-complex-is-this-code/
+
 *** TODO code churn
+:PROPERTIES:
+:ID:       04b3a73e-60f7-4a6c-87d7-10ff978e24b4
+:END:
 *** TODO change coupling
 *** TODO use case of coupling: find coupled files
 *** TODO code communication

@@ -86,6 +86,15 @@
          (list (string-to-number (s-replace "d" "" days|months)) 24))
        (list time))))))
 
+(defun c/first (l)
+  (car l))
+
+(defun c/second (l)
+  (nth 1 l))
+
+(defun c/third (l)
+  (nth 2 l))
+
 (defun c/produce-git-report (repository date)
   "Create git report for REPOSITORY with a Git log starting at DATE."
   (interactive
@@ -3104,7 +3113,6 @@ d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
             (browse-url-generic-program ,c/preferred-browser))
         (c/run-server-and-navigate (if (eq ',command 'c/show-hotspot-cluster-sync) "system" ,repository) (or ,port 8888))))))
 
-;;;###autoload
 (defun c/show-hotspots-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots starting at DATE, optionally served at PORT."
   (interactive
@@ -3135,6 +3143,142 @@ d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))))
   (--each c/snapshot-periods (c/show-hotspots-sync repository (c/request-date it) 8888)))
+
+;; BEGIN indentation
+
+(defun c/split-on-newlines (code)
+  "Split CODE over newlines."
+  (s-split "\n" code))
+
+(defun c/remove-empty-lines (lines)
+  "Remove empty LINES."
+  (--remove (eq (length (s-trim it)) 0) lines))
+
+(defun c/remove-text-after-indentation (lines)
+  "Remove text in LINES."
+  (--map
+   (apply 'string (--take-while (or (eq ?\s  it) (eq ?\t it)) (string-to-list it)))
+   lines))
+
+(defun c/find-indentation (lines-without-text)
+  "Infer indentation level in LINES-WITHOUT-TEXT. If no indentation present in file, defaults to 2."
+  (or (--> lines-without-text
+           (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
+           (let ((spaces-ind (-sort '< (--remove (eq 0 it) (-map 'c/first it))))
+                 (tabs-ind (-sort '< (--remove (eq 0 it) (-map 'c/second it)))))
+             (if (> (length spaces-ind) (length tabs-ind))
+                 (c/first spaces-ind)
+               (c/first tabs-ind))))
+      2))
+
+(defun c/convert-tabs-to-spaces (line-without-text n)
+  "Replace tabs in LINE-WITHOUT-TEXT with N spaces."
+  (s-replace "\t" (make-string n ?\s) line-without-text))
+
+(defun c/calculate-complexity (line-without-text indentation)
+  "Calculate indentation complexity by dividing length of LINE-WITHOUT-TEXT by INDENTATION."
+  (/ (+ 0.0 (length line-without-text)) indentation))
+
+(defun c/as-logical-indents (lines &optional opts)
+  "Calculate logical indentations of LINES. Try to infer how many space is an indent unless OPTS provides it."
+  (let ((indentation (or opts (c/find-indentation lines))))
+   (list
+     (--map
+      (--> it
+           (c/convert-tabs-to-spaces it indentation)
+           (c/calculate-complexity it indentation))
+      lines)
+     indentation)))
+
+(defun c/stats-from (complexities-indentation)
+  "Return stats from COMPLEXITIES-INDENTATION."
+  (let* ((complexities (c/first complexities-indentation))
+         (mean (/ (-sum complexities) (length complexities)))
+         (sd (sqrt (/ (-sum (--map (expt (- it mean) 2) complexities)) (length complexities)))))
+    `((total . ,(-sum complexities))
+      (n-lines . ,(length complexities))
+      (max . ,(-max complexities))
+      (mean . ,mean)
+      (standard-deviation . ,sd)
+      (used-indentation . ,(c/second complexities-indentation)))))
+
+(defun c/calculate-complexity-stats (code &optional opts)
+  "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation."
+  (--> code
+       ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
+       c/split-on-newlines
+       c/remove-empty-lines
+       c/remove-text-after-indentation
+       (c/as-logical-indents it opts)
+       c/stats-from))
+
+(defun c/calculate-complexity-current-buffer (&optional indentation)
+  "Calculate complexity of the current buffer contents.
+Optionally you can provide the INDENTATION level of the file. The
+code can infer it automatically."
+  (interactive)
+  (message "%s"
+           (c/calculate-complexity-stats
+            (buffer-substring-no-properties (point-min) (point-max)) indentation)))
+
+;; END indentation
+
+;; BEGIN complexity over commits
+
+(defun c/retrieve-commits-up-to-date-touching-file (file &optional date)
+  "Retrieve list of commits touching FILE from DATE."
+  (s-split
+   "\n"
+   (shell-command-to-string
+    (s-concat
+     "git log --format=format:%H --reverse "
+     (if date
+         (s-concat "--after=" date " ")
+       "")
+     file))))
+
+(defun c/retrieve-file-at-commit-with-git (file commit)
+  "Retrieve FILE contents at COMMIT."
+  (let ((git-file
+         (s-join
+          "/"
+          (cdr
+           (--drop-while
+            (not
+             (string= it (c/second (reverse (s-split "/" (cdr (project-current)))))))
+            (s-split "/" file))))))
+    (shell-command-to-string (format "git show %s:%s" commit git-file))))
+
+(defun c/git-hash-to-date (commit)
+  "Return the date of the COMMIT. Note this is the date of merging in, not of the code change."
+  (s-replace "\n" "" (shell-command-to-string (s-concat "git show --no-patch --no-notes --pretty='%cd' --date=short " commit))))
+
+(defun c/calculate-complexity-over-commits (file &optional opts)
+  (--> (call-interactively 'c/request-date)
+       (c/retrieve-commits-up-to-date-touching-file file it)
+       (--map
+        (--> it
+             (list it (c/retrieve-file-at-commit-with-git file it))
+             (list (c/first it) (c/calculate-complexity-stats (c/second it) opts)))
+        it)))
+
+(defun c/plot-lines-with-graph-cli (data)
+  (let ((tmp-file "/tmp/data-file-graph-cli.csv"))
+    (with-temp-file tmp-file
+      (insert "commit-date,total-complexity,loc\n")
+      (insert (s-join "\n" (--map (s-replace-all '((" " . ",") ("(" . "") (")" . "")) (format "%s" it)) data))))
+    (shell-command
+     (format "graph %s" tmp-file))))
+
+(defun c/show-complexity-over-commits (file &optional opts)
+  "Make a graph plotting complexity out of a FILE. Optionally give file indentation in OPTS."
+  (interactive (list (read-file-name "Select file:" nil nil nil (buffer-file-name))))
+  (c/plot-lines-with-graph-cli
+   (--map
+    (list (c/git-hash-to-date (c/first it)) (alist-get 'total (c/second it)) (alist-get 'n-lines (c/second it)))
+    (c/calculate-complexity-over-commits file opts))))
+
+;; END complexity over commits
 
 (provide 'code-compass)
 ;;; code-compass ends here
