@@ -3245,9 +3245,9 @@ code can infer it automatically."
           (cdr
            (--drop-while
             (not
-             (string= it (c/second (reverse (s-split "/" (cdr (project-current)))))))
+             (string= it (c/third (reverse (s-split "/" (magit-git-dir))))))
             (s-split "/" file))))))
-    (shell-command-to-string (format "git show %s:%s" commit git-file))))
+    (shell-command-to-string (format "git show %s:\"%s\"" commit git-file))))
 
 (defun c/git-hash-to-date (commit)
   "Return the date of the COMMIT. Note this is the date of merging in, not of the code change."
