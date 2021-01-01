@@ -3,8 +3,8 @@
 ;; Copyright (C) 2020 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
-;; Version: 0.0.2
-;; Package-Version: 20201224
+;; Version: 0.0.3
+;; Package-Version: 20210101
 ;; Keywords: emacs, sofware, analysis
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -3099,7 +3099,7 @@ d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
     (c/run-server repository port)
     (c/navigate-to-localhost repository port)))
 
-(defun c/async-run (command repository date &optional port)
+(defun c/async-run (command repository date &optional port do-not-serve)
   "Run asynchronously COMMAND taking a REPOSITORY and a DATE, optionally at PORT."
   (async-start
    `(lambda ()
@@ -3111,7 +3111,7 @@ d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
    `(lambda (result)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,c/preferred-browser))
-        (c/run-server-and-navigate (if (eq ',command 'c/show-hotspot-cluster-sync) "system" ,repository) (or ,port 8888))))))
+        (when (not ,do-not-serve) (c/run-server-and-navigate (if (eq ',command 'c/show-hotspot-cluster-sync) "system" ,repository) (or ,port 8888)))))))
 
 (defun c/show-hotspots-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots starting at DATE, optionally served at PORT."
@@ -3262,13 +3262,18 @@ code can infer it automatically."
              (list (c/first it) (c/calculate-complexity-stats (c/second it) opts)))
         it)))
 
+(defun c/plot-csv-file-with-graph-cli (file)
+  "Plot CSV FILE with graph-cli."
+  (shell-command
+   (format "graph %s" file)))
+
 (defun c/plot-lines-with-graph-cli (data)
+  "Plot DATA from lists as a graph."
   (let ((tmp-file "/tmp/data-file-graph-cli.csv"))
     (with-temp-file tmp-file
       (insert "commit-date,total-complexity,loc\n")
       (insert (s-join "\n" (--map (s-replace-all '((" " . ",") ("(" . "") (")" . "")) (format "%s" it)) data))))
-    (shell-command
-     (format "graph %s" tmp-file))))
+    (c/plot-csv-file-with-graph-cli tmp-file)))
 
 (defun c/show-complexity-over-commits (file &optional opts)
   "Make a graph plotting complexity out of a FILE. Optionally give file indentation in OPTS."
@@ -3278,6 +3283,31 @@ code can infer it automatically."
     (list (c/git-hash-to-date (c/first it)) (alist-get 'total (c/second it)) (alist-get 'n-lines (c/second it)))
     (c/calculate-complexity-over-commits file opts))))
 
+;; END complexity over commits
+
+;; BEGIN code churn
+(defun c/produce-code-maat-abs-churn-report (repository)
+  "Create code-maat abs-churn report for REPOSITORY."
+  (c/run-code-maat "abs-churn" repository)
+  repository)
+
+(defun c/show-code-churn-sync (repository date)
+  "Show how much code was added and removed from REPOSITORY from a DATE."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (--> repository
+       (c/produce-git-report it date)
+       c/produce-code-maat-abs-churn-report
+       (format"/tmp/%s-abs-churn.csv" (f-filename it))
+       c/plot-csv-file-with-graph-cli))
+
+(defun c/show-code-churn (repository date)
+  "Show how much code was added and removed from REPOSITORY from a DATE."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-code-churn-sync repository date nil 't))
 ;; END complexity over commits
 
 (provide 'code-compass)

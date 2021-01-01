@@ -106,10 +106,9 @@ For trying things out in a clean Emacs:
 (use-package simple-httpd)
 #+end_src
 
-#+begin_src sh
+#+begin_src sh :results none
 emacs -Q -l /tmp/code-compass-minimal-setup.el -l ./code-compass.el
 #+end_src
-
 
 ** Limitations
 :PROPERTIES:
@@ -155,11 +154,16 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :END:
 - https://ag91.github.io/blog/2020/12/27/emacs-as-your-code-compass-how-complex-is-this-code/
 
-*** TODO code churn
+*** DONE code churn
 :PROPERTIES:
 :ID:       04b3a73e-60f7-4a6c-87d7-10ff978e24b4
+:CREATED:  [2021-01-01 Fri 16:54]
 :END:
+- https://ag91.github.io/blog/2021/01/01/emacs-as-your-code-compass-how-much-code-we-produced-for-this-repository-lately/
 *** TODO change coupling
+:PROPERTIES:
+:ID:       59df8e40-e5d3-47dc-b9da-10666301acc8
+:END:
 *** TODO use case of coupling: find coupled files
 *** TODO code communication
 *** TODO code knowledge
