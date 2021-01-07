@@ -78,7 +78,7 @@ pip3 install --user graph-cli
 
 For trying things out in a clean Emacs:
 
-#+begin_src elisp :tangle /tmp/code-compass-minimal-setup.el
+#+begin_src elisp :noeval :tangle /tmp/code-compass-minimal-setup.el
 (require 'package)
 (eval-and-compile
   (setq
@@ -160,10 +160,11 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :CREATED:  [2021-01-01 Fri 16:54]
 :END:
 - https://ag91.github.io/blog/2021/01/01/emacs-as-your-code-compass-how-much-code-we-produced-for-this-repository-lately/
-*** TODO change coupling
+*** DONE change coupling
 :PROPERTIES:
 :ID:       59df8e40-e5d3-47dc-b9da-10666301acc8
 :END:
+- https://ag91.github.io/blog/2021/01/07/emacs-as-your-code-compass-how-related-are-these-modules/
 *** TODO use case of coupling: find coupled files
 *** TODO code communication
 *** TODO code knowledge
@@ -200,4 +201,5 @@ it! Thanks for caring.
   example, you are struggling to identify the commit that broke your
   release.
 - ???
+  
   
