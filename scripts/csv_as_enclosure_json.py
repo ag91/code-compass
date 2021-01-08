@@ -1,22 +1,20 @@
 #!/bin/env python
 
-#######################################################################
-## This program generates a JSON document suitable for a D3.js
-## enclosure diagram visualization.
-## The input data is read from two CSV files:
-##  1) The complete system structure, including size metrics.
-##  2) A hotspot analysis result used to assign weights to the modules.
-#######################################################################
+"""
+This program generates a JSON document suitable for a D3.js
+enclosure diagram visualization.
+The input data is read from two CSV files:
+ 1) The complete system structure, including size metrics.
+ 2) A hotspot analysis result used to assign weights to the modules.
+"""
 
 import argparse
 import csv
 import json
-import sys
 
 
 class MergeError(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
+    pass
 
 
 class Merged(object):
@@ -26,10 +24,9 @@ class Merged(object):
 
     def sorted_result(self):
         # Sort on descending order:
-        ordered = sorted(
+        return sorted(
             list(self._merged.items()), key=lambda item: item[1][0], reverse=True
         )
-        return ordered
 
     def extend_with(self, name, freqs):
         if name in self._all_modules_with_complexity:
@@ -42,20 +39,17 @@ class Merged(object):
 
 def write_csv(stats):
     print("module,revisions,code")
-    for s in stats:
-        name, (f, c) = s
-        print(name + "," + f + "," + c)
+    for name, (f, c) in stats:
+        print(f"{name},{f},{c}")
 
 
 def parse_complexity(merged, row):
-    name = row[1][2:]
-    complexity = row[4]
-    merged.record_detected(name, complexity)
+    _, name, _, _, complexity, *_ = row
+    merged.record_detected(name[2:], complexity)
 
 
 def parse_freqs(merged, row):
-    name = row[0]
-    freqs = row[1]
+    name, freqs, *_ = row
     merged.extend_with(name, freqs)
 
 
@@ -71,11 +65,6 @@ def merge(revs_file, comp_file):
     write_csv(merged.sorted_result())
 
 
-######################################################################
-## Parse input
-######################################################################
-
-
 def validate_content_by(heading, expected):
     if not expected:
         return  # no validation
@@ -83,7 +72,7 @@ def validate_content_by(heading, expected):
     stripped = heading[0 : len(comparison)]  # allow extra fields
     if stripped != comparison:
         raise MergeError(
-            "Erroneous content. Expected = " + expected + ", got = " + ",".join(heading)
+            f"Erroneous content. Expected = {expected}, got = {','.join(heading)}"
         )
 
 
@@ -94,7 +83,7 @@ def parse_csv(filename, parse_action, expected_format=None):
             p = next(r)
         return p
 
-    with open(filename, "rb") as csvfile:
+    with open(filename, "r") as csvfile:
         r = csv.reader(csvfile, delimiter=",")
         heading = read_heading_from(r)
         validate_content_by(heading, expected_format)
@@ -111,9 +100,8 @@ class StructuralElement(object):
 
 
 def parse_structural_element(csv_row):
-    name = csv_row[1][2:]
-    complexity = csv_row[4]
-    return StructuralElement(name, complexity)
+    _, name, _, _, complexity, *_ = csv_row
+    return StructuralElement(name[2:], complexity)
 
 
 def make_element_weight_parser(weight_column):
@@ -129,11 +117,6 @@ def make_element_weight_parser(weight_column):
     return parse_element_weight
 
 
-######################################################################
-## Calculating weights from the given CSV analysis file
-######################################################################
-
-
 def module_weight_calculator_from(analysis_results):
     max_raw_weight = max(analysis_results, key=lambda e: e[1])
     max_value = max_raw_weight[1]
@@ -147,11 +130,6 @@ def module_weight_calculator_from(analysis_results):
         return 0.0
 
     return normalized_weight_for
-
-
-######################################################################
-## Building the structure of the system
-######################################################################
 
 
 def _matching_part_in(hierarchy, part):
@@ -189,10 +167,10 @@ def _insert_parts_into(hierarchy, module, weight_calculator, parts):
     """
     if len(parts) == 1:
         return _add_leaf(hierarchy, module, weight_calculator, name=parts[0])
-    next_branch = parts[0]
+    next_branch, *rest = parts
     existing_branch = _ensure_branch_exists(hierarchy, next_branch)
     return _insert_parts_into(
-        existing_branch["children"], module, weight_calculator, parts=parts[1:]
+        existing_branch["children"], module, weight_calculator, parts=rest
     )
 
 
@@ -202,22 +180,12 @@ def generate_structure_from(modules, weight_calculator):
         parts = module.parts()
         _insert_parts_into(hierarchy, module, weight_calculator, parts)
 
-    structure = {"name": "root", "children": hierarchy}
-    return structure
-
-
-######################################################################
-## Output
-######################################################################
+    return {"name": "root", "children": hierarchy}
 
 
 def write_json(result):
     print(json.dumps(result))
 
-
-######################################################################
-## Main
-######################################################################
 
 # TODO: turn it around: parse the weights first and add them to individual elements
 # as the raw structure list is built!
