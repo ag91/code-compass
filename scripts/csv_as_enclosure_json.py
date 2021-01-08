@@ -24,7 +24,7 @@ class Merged(object):
 
         def sorted_result(self):
                 # Sort on descending order:
-                ordered = sorted(self._merged.items(), key=lambda item: item[1][0], reverse=True)
+                ordered = sorted(list(self._merged.items()), key=lambda item: item[1][0], reverse=True)
                 return ordered
 
         def extend_with(self, name, freqs):
@@ -36,10 +36,10 @@ class Merged(object):
                 self._all_modules_with_complexity[name] = complexity
 
 def write_csv(stats):
-        print 'module,revisions,code'
+        print('module,revisions,code')
         for s in stats:
                 name, (f,c) = s
-                print name + ',' + f + ',' + c
+                print(name + ',' + f + ',' + c)
 
 def parse_complexity(merged, row):
         name = row[1][2:]
@@ -71,9 +71,9 @@ def validate_content_by(heading, expected):
 
 def parse_csv(filename, parse_action, expected_format=None):
         def read_heading_from(r):
-                p = r.next()
+                p = next(r)
                 while p == []:
-                        p = r.next()
+                        p = next(r)
                 return p
         with open(filename, 'rb') as csvfile:
                 r = csv.reader(csvfile, delimiter=',')
@@ -171,7 +171,7 @@ def generate_structure_from(modules, weight_calculator):
 ######################################################################
 
 def write_json(result):
-        print json.dumps(result)
+        print(json.dumps(result))
 
 ######################################################################
 ## Main

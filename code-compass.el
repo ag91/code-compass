@@ -6642,7 +6642,7 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
   (message "Produce json...")
   (shell-command
    (format
-    "cd /tmp; python csv_as_enclosure_json.py --structure cloc-%s.csv --weights %s-revisions.csv > /tmp/%s/%s_hotspot_proto.json"
+    "cd /tmp; python3 csv_as_enclosure_json.py --structure cloc-%s.csv --weights %s-revisions.csv > /tmp/%s/%s_hotspot_proto.json"
     (f-filename repository)
     (f-filename repository)
     (f-filename repository)
