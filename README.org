@@ -165,8 +165,16 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :ID:       59df8e40-e5d3-47dc-b9da-10666301acc8
 :END:
 - https://ag91.github.io/blog/2021/01/07/emacs-as-your-code-compass-how-related-are-these-modules/
-*** TODO use case of coupling: find coupled files
+*** DONE use case of coupling: find coupled files
+:PROPERTIES:
+:CREATED:  [2021-01-12 Tue 22:16]
+:ID:       29de5da7-8ba0-46a7-8afa-397b02d4642d
+:END:
+- https://ag91.github.io/blog/2021/01/12/emacs-as-your-code-compass-let-history-show-you-which-files-to-edit-next/
 *** TODO code communication
+:LOGBOOK:
+CLOCK: [2021-01-12 Tue 22:16]
+:END:
 *** TODO code knowledge
 *** TODO code stability
 *** TODO fragmentation

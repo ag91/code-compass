@@ -7331,6 +7331,87 @@ function packageImports(nodes) {
   (c/async-run 'c/show-coupling-graph-sync repository date port))
 ;; END change coupling
 
+;; BEGIN find coupled files
+(defun c/get-coupling-alist-sync (repository)
+  "Get list of coupled files in REPOSITORY async."
+  (--> repository
+       (c/produce-git-report it nil)
+       c/produce-code-maat-coupling-report
+       (c/get-analysis-as-string-from-csv it "coupling")
+       (c/add-filename-to-analysis-columns repository it)
+       (--map (s-split "," it) (cdr it))))
+
+(defun c/get-coupling-alist (repository fun)
+  "FUN takes a list of coupled files in REPOSITORY."
+  (async-start
+   `(lambda ()
+      (setq load-path ',load-path)
+      (load-file "~/.emacs.d/lisp/dot-code-maat.el")
+      (c/get-coupling-alist-sync ,repository))
+   fun))
+
+(defcustom c/calculate-coupling-project-key-fn
+  'identity
+  "Function taking a REPOSITORY path and returning a string.")
+
+(defvar c/coupling-project-map
+  (make-hash-table :test 'equal)
+  "Hash table to contain coupling files list.")
+
+(defun c/get-coupled-files-alist (repository fun)
+  "Run FUN on the coupled files for REPOSITORY."
+  (let* ((key (funcall c/calculate-coupling-project-key-fn repository))
+         (c/files (gethash key c/coupling-project-map)))
+    (if c/files
+        (funcall fun c/files)
+      (progn
+        (message "Building coupling cache asynchronously...")
+        (c/get-coupling-alist
+         repository
+         `(lambda (result-files)
+            (puthash ,key result-files c/coupling-project-map)
+            (funcall ,fun result-files)))))))
+
+(defun c/clear-coupling-project-map ()
+  "Clear `c/coupling-project-hash'."
+  (interactive)
+  (clrhash c/coupling-project-map))
+
+(defun c/get-coupled-files-alist-hook-fn ()
+  "Calculate coupled files asynchronously."
+  (let ((git-root (ignore-errors (vc-root-dir))))
+    (when git-root
+      (c/get-coupled-files-alist
+       git-root
+       `(lambda (x)
+          (message
+           "Finished to update coupled files for %s and found %s coupled files."
+           ,git-root
+           (length x)))))))
+
+(defun c/find-coupled-files ()
+  "Allow user to choose files coupled according to previous changes."
+  (interactive)
+  (let ((choose-file
+         (lambda (files)
+           (--> files
+                (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
+                (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+                (-map (lambda (file)
+                        (when (or (string= (file-truename (buffer-file-name)) (file-truename (car file)))
+                                  (string= (file-truename (buffer-file-name)) (file-truename (nth 1 file))))
+                          (car
+                           (--remove (string= (file-truename (buffer-file-name)) (file-truename it)) (-take 2 file)))))
+                      it)
+                (-remove 'null it)
+                (if (null it)
+                    (message "No coupled file found!")
+                  (completing-read "Find coupled file: " it nil 't))))))
+    (--> (vc-root-dir)
+         (c/get-coupled-files-alist it choose-file)
+         (when (f-file-p it) (find-file it)))))
+;; END find coupled files
+
 (provide 'code-compass)
 ;;; code-compass ends here
 
