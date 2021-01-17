@@ -145,11 +145,14 @@
    (format "cd %s; cloc ./ --by-file --csv --quiet --report-file=/tmp/cloc-%s.csv" repository (f-filename repository)))
   repository)
 
+(defun c/expand-file-name (file-name)
+  (expand-file-name file-name c/path-to-code-compass))
+
+(defun c/copy-file (file-name directory)
+  (copy-file (c/expand-file-name file-name) directory t))
+
 (defun c/copy-script-to-tmp (script)
-  (copy-file
-   (expand-file-name (format "./scripts/%s" script) c/path-to-code-compass)
-   "/tmp/"
-   t))
+  (c/copy-file (c/expand-file-name (format "./scripts/%s" script)) "/tmp/"))
 
 (defun c/generate-merger-script (repository)
   "Generate a Python script to give weights to the circle diagram of REPOSITORY."
@@ -6654,47 +6657,13 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
 <meta charset=\"utf-8\">
-<style>
-
-.node {
-  cursor: pointer;
-}
-
-.node:hover {
-  stroke: #000;
-  stroke-width: 1.5px;
-}
-
-.node--root {
-  stroke: #777;
-  stroke-width: 2px;
-}
-
-.node--leaf {
-  fill: white;
-  stroke: #777;
-  stroke-width: 1px;
-}
-
-.label {
-  font: 14px \"Helvetica Neue\", Helvetica, Arial, sans-serif;
-  text-anchor: middle;
-  fill: white;
-  //text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
-}
-
-.label,
-.node--root,
-.node--leaf {
-  pointer-events: none;
-}
-
-</style>
+<link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3.min.js\"></script>
 <script>
@@ -7045,58 +7014,13 @@ code can infer it automatically."
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/edge-bundling/style.css" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
 <meta charset=\"utf-8\">
-<style>
-
-.node {
-  font: 300 11px \"Helvetica Neue\", Helvetica, Arial, sans-serif;
-  fill: #bbb;
-}
-
-.node:hover {
-  fill: #000;
-}
-
-.link {
-  stroke: steelblue;
-  stroke-opacity: 0.4;
-  fill: none;
-  pointer-events: none;
-}
-
-.node:hover,
-.node--source,
-.node--target {
-  font-weight: 700;
-}
-
-.node--source {
-  fill: #2ca02c;
-}
-
-.node--target {
-  fill: #d62728;
-}
-
-.link--source,
-.link--target {
-  stroke-opacity: 1;
-  stroke-width: 2px;
-}
-
-.link--source {
-  stroke: #d62728;
-}
-
-.link--target {
-  stroke: #2ca02c;
-}
-
-</style>
+<link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3-v4.min.js\"></script>
 <script>
