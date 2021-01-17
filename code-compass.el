@@ -6655,9 +6655,13 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
     (f-filename repository)))
   repository)
 
+(defun c/generate-javascript-with-repository-variable (repository)
+  (concat "<script> var repository = \"" (f-filename repository) "\"; </script>"))
+
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
   (c/copy-file "./pages/enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
+  (c/copy-file "./pages/enclosure-diagram/script.js" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
@@ -6666,94 +6670,10 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 <link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3.min.js\"></script>
-<script>
-
-var margin = 10,
-    outerDiameter = 960,
-    innerDiameter = outerDiameter - margin - margin;
-
-var x = d3.scale.linear()
-    .range([0, innerDiameter]);
-
-var y = d3.scale.linear()
-    .range([0, innerDiameter]);
-
-var color = d3.scale.linear()
-    .domain([-1, 5])
-    .range([\"hsl(185,60%,99%)\", \"hsl(187,40%,70%)\"])
-    .interpolate(d3.interpolateHcl);
-
-var pack = d3.layout.pack()
-    .padding(2)
-    .size([innerDiameter, innerDiameter])
-    .value(function(d) { return d.size; })
-
-var svg = d3.select(\"body\").append(\"svg\")
-    .attr(\"width\", outerDiameter)
-    .attr(\"height\", outerDiameter)
-  .append(\"g\")
-    .attr(\"transform\", \"translate(\" + margin + \",\" + margin + \")\");
-
-d3.json(\""
-      (f-filename repository)
-      "_hotspot_proto.json"
-      "\", function(error, root) {
-  var focus = root,
-      nodes = pack.nodes(root);
-
-  svg.append(\"g\").selectAll(\"circle\")
-      .data(nodes)
-    .enter().append(\"circle\")
-      .attr(\"class\", function(d) { return d.parent ? d.children ? \"node\" : \"node node--leaf\" : \"node node--root\"; })
-      .attr(\"transform\", function(d) { return \"translate(\" + d.x + \",\" + d.y + \")\"; })
-      .attr(\"r\", function(d) { return d.r; })
-      .style(\"fill\", function(d) { return d.weight > 0.0 ? \"darkred\" :
-      d.children ? color(d.depth) : \"black\"; })
-      .style(\"fill-opacity\", function(d) { return d.weight; })
-      .on(\"click\", function(d) { return zoom(focus == d ? root : d); });
-
-  svg.append(\"g\").selectAll(\"text\")
-      .data(nodes)
-    .enter().append(\"text\")
-      .attr(\"class\", \"label\")
-      .attr(\"transform\", function(d) { return \"translate(\" + d.x + \",\" + d.y + \")\"; })
-      .style(\"fill-opacity\", function(d) { return d.parent === root ? 1 : 0; })
-      .style(\"display\", function(d) { return d.parent === root ? null : \"none\"; })
-      .text(function(d) { return d.name; });
-
-  d3.select(window)
-      .on(\"click\", function() { zoom(root); });
-
-  function zoom(d, i) {
-    var focus0 = focus;
-    focus = d;
-
-    var k = innerDiameter / d.r / 2;
-    x.domain([d.x - d.r, d.x + d.r]);
-    y.domain([d.y - d.r, d.y + d.r]);
-    d3.event.stopPropagation();
-
-    var transition = d3.selectAll(\"text,circle\").transition()
-        .duration(d3.event.altKey ? 7500 : 750)
-        .attr(\"transform\", function(d) { return \"translate(\" + x(d.x) + \",\" + y(d.y) + \")\"; });
-
-    transition.filter(\"circle\")
-        .attr(\"r\", function(d) { return k * d.r; });
-
-    transition.filter(\"text\")
-      .filter(function(d) { return d.parent === focus || d.parent === focus0; })
-        .style(\"fill-opacity\", function(d) { return d.parent === focus ? 1 : 0; })
-        .each(\"start\", function(d) { if (d.parent === focus) this.style.display = \"inline\"; })
-        .each(\"end\", function(d) { if (d.parent !== focus) this.style.display = \"none\"; });
-  }}
-);
-
-d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
-
-</script>
-
-
-")))
+"
+      (c/generate-javascript-with-repository-variable repository)
+      "
+<script src=\"script.js\"></script>")))
   repository)
 
 (defun c/navigate-to-localhost (repository &optional port)
@@ -7014,6 +6934,7 @@ code can infer it automatically."
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/edge-bundling/script.js" (format "/tmp/%s/" (f-filename repository)))
   (c/copy-file "./pages/edge-bundling/style.css" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
@@ -7023,130 +6944,11 @@ code can infer it automatically."
 <link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3-v4.min.js\"></script>
-<script>
-
-var diameter = 960,
-    radius = diameter / 2,
-    innerRadius = radius - 120;
-
-var cluster = d3.cluster()
-    .size([360, innerRadius]);
-
-var line = d3.radialLine()
-    .curve(d3.curveBundle.beta(0.85))
-    .radius(function(d) { return d.y; })
-    .angle(function(d) { return d.x / 180 * Math.PI; });
-
-var svg = d3.select(\"body\").append(\"svg\")
-    .attr(\"width\", diameter)
-    .attr(\"height\", diameter)
-  .append(\"g\")
-    .attr(\"transform\", \"translate(\" + radius + \",\" + radius + \")\");
-
-var link = svg.append(\"g\").selectAll(\".link\"),
-    node = svg.append(\"g\").selectAll(\".node\");
-
-d3.json(\""
-      (f-filename repository)
-      "-edgebundling.json\", function(error, classes) {
-  if (error) throw error;
-
-  var root = packageHierarchy(classes)
-      .sum(function(d) { return d.size; });
-
-  cluster(root);
-
-  link = link
-    .data(packageImports(root.leaves()))
-    .enter().append(\"path\")
-      .each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
-      .attr(\"class\", \"link\")
-      .attr(\"d\", line);
-
-  node = node
-    .data(root.leaves())
-    .enter().append(\"text\")
-      .attr(\"class\", \"node\")
-      .attr(\"dy\", \"0.31em\")
-      .attr(\"transform\", function(d) { return \"rotate(\" + (d.x - 90) + \")translate(\" + (d.y + 8) + \",0)\" + (d.x < 180 ? \"\" : \"rotate(180)\"); })
-      .attr(\"text-anchor\", function(d) { return d.x < 180 ? \"start\" : \"end\"; })
-      .text(function(d) { return d.data.key; })
-      .on(\"mouseover\", mouseovered)
-      .on(\"mouseout\", mouseouted);
-});
-
-function mouseovered(d) {
-  node
-      .each(function(n) { n.target = n.source = false; });
-
-  link
-      .classed(\"link--target\", function(l) { if (l.target === d) return l.source.source = true; })
-      .classed(\"link--source\", function(l) { if (l.source === d) return l.target.target = true; })
-    .filter(function(l) { return l.target === d || l.source === d; })
-      .raise();
-
-  node
-      .classed(\"node--target\", function(n) { return n.target; })
-      .classed(\"node--source\", function(n) { return n.source; });
-}
-
-function mouseouted(d) {
-  link
-      .classed(\"link--target\", false)
-      .classed(\"link--source\", false);
-
-  node
-      .classed(\"node--target\", false)
-      .classed(\"node--source\", false);
-}
-
-// Lazily construct the package hierarchy from class names.
-function packageHierarchy(classes) {
-  var map = {};
-
-  function find(name, data) {
-    var node = map[name], i;
-    if (!node) {
-      node = map[name] = data || {name: name, children: []};
-      if (name.length) {
-        node.parent = find(name.substring(0, i = name.lastIndexOf(\"/\")));
-        node.parent.children.push(node);
-        node.key = name.substring(i + 1);
-      }
-    }
-    return node;
-  }
-
-  classes.forEach(function(d) {
-    find(d.name, d);
-  });
-
-  return d3.hierarchy(map[\"\"]);
-}
-
-// Return a list of imports for the given array of nodes.
-function packageImports(nodes) {
-  var map = {},
-      imports = [];
-
-  // Compute a map from name to node.
-  nodes.forEach(function(d) {
-    map[d.data.name] = d;
-  });
-
-  // For each import, construct a link from the source to target node.
-  nodes.forEach(function(d) {
-    if (d.data.imports) d.data.imports.forEach(function(i) {
-      if (map[i]) { // skip nodes that do not have a pair
-      imports.push(map[d.data.name].path(map[i]));
-    }});
-  });
-
-  return imports;
-}
-
-</script>
-")))
+"
+      (c/generate-javascript-with-repository-variable repository)
+      "
+<script src=\"script.js\"></script>"
+      )))
   repository)
 
 (defun c/show-coupling-graph-sync (repository date &optional port)
