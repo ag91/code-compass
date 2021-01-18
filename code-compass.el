@@ -145,12 +145,18 @@
    (format "cd %s; cloc ./ --by-file --csv --quiet --report-file=/tmp/cloc-%s.csv" repository (f-filename repository)))
   repository)
 
+(defun c/expand-file-name (file-name)
+  (expand-file-name file-name c/path-to-code-compass))
+
+(defun c/copy-file (file-name directory)
+  (copy-file (c/expand-file-name file-name) directory t))
+
+(defun c/copy-script-to-tmp (script)
+  (c/copy-file (c/expand-file-name (format "./scripts/%s" script)) "/tmp/"))
+
 (defun c/generate-merger-script (repository)
   "Generate a Python script to give weights to the circle diagram of REPOSITORY."
-  (copy-file
-   (expand-file-name "./scripts/csv_as_enclosure_json.py" c/path-to-code-compass)
-   "/tmp/"
-   t)
+  (c/copy-script-to-tmp "csv_as_enclosure_json.py")
   repository)
 
 (defun c/generate-d3-lib (repository)
@@ -6649,139 +6655,25 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
     (f-filename repository)))
   repository)
 
+(defun c/generate-javascript-with-repository-variable (repository)
+  (concat "<script> var repository = \"" (f-filename repository) "\"; </script>"))
+
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
+  (c/copy-file "./pages/enclosure-diagram/script.js" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
 <meta charset=\"utf-8\">
-<style>
-
-.node {
-  cursor: pointer;
-}
-
-.node:hover {
-  stroke: #000;
-  stroke-width: 1.5px;
-}
-
-.node--root {
-  stroke: #777;
-  stroke-width: 2px;
-}
-
-.node--leaf {
-  fill: white;
-  stroke: #777;
-  stroke-width: 1px;
-}
-
-.label {
-  font: 14px \"Helvetica Neue\", Helvetica, Arial, sans-serif;
-  text-anchor: middle;
-  fill: white;
-  //text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
-}
-
-.label,
-.node--root,
-.node--leaf {
-  pointer-events: none;
-}
-
-</style>
+<link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3.min.js\"></script>
-<script>
-
-var margin = 10,
-    outerDiameter = 960,
-    innerDiameter = outerDiameter - margin - margin;
-
-var x = d3.scale.linear()
-    .range([0, innerDiameter]);
-
-var y = d3.scale.linear()
-    .range([0, innerDiameter]);
-
-var color = d3.scale.linear()
-    .domain([-1, 5])
-    .range([\"hsl(185,60%,99%)\", \"hsl(187,40%,70%)\"])
-    .interpolate(d3.interpolateHcl);
-
-var pack = d3.layout.pack()
-    .padding(2)
-    .size([innerDiameter, innerDiameter])
-    .value(function(d) { return d.size; })
-
-var svg = d3.select(\"body\").append(\"svg\")
-    .attr(\"width\", outerDiameter)
-    .attr(\"height\", outerDiameter)
-  .append(\"g\")
-    .attr(\"transform\", \"translate(\" + margin + \",\" + margin + \")\");
-
-d3.json(\""
-      (f-filename repository)
-      "_hotspot_proto.json"
-      "\", function(error, root) {
-  var focus = root,
-      nodes = pack.nodes(root);
-
-  svg.append(\"g\").selectAll(\"circle\")
-      .data(nodes)
-    .enter().append(\"circle\")
-      .attr(\"class\", function(d) { return d.parent ? d.children ? \"node\" : \"node node--leaf\" : \"node node--root\"; })
-      .attr(\"transform\", function(d) { return \"translate(\" + d.x + \",\" + d.y + \")\"; })
-      .attr(\"r\", function(d) { return d.r; })
-      .style(\"fill\", function(d) { return d.weight > 0.0 ? \"darkred\" :
-      d.children ? color(d.depth) : \"black\"; })
-      .style(\"fill-opacity\", function(d) { return d.weight; })
-      .on(\"click\", function(d) { return zoom(focus == d ? root : d); });
-
-  svg.append(\"g\").selectAll(\"text\")
-      .data(nodes)
-    .enter().append(\"text\")
-      .attr(\"class\", \"label\")
-      .attr(\"transform\", function(d) { return \"translate(\" + d.x + \",\" + d.y + \")\"; })
-      .style(\"fill-opacity\", function(d) { return d.parent === root ? 1 : 0; })
-      .style(\"display\", function(d) { return d.parent === root ? null : \"none\"; })
-      .text(function(d) { return d.name; });
-
-  d3.select(window)
-      .on(\"click\", function() { zoom(root); });
-
-  function zoom(d, i) {
-    var focus0 = focus;
-    focus = d;
-
-    var k = innerDiameter / d.r / 2;
-    x.domain([d.x - d.r, d.x + d.r]);
-    y.domain([d.y - d.r, d.y + d.r]);
-    d3.event.stopPropagation();
-
-    var transition = d3.selectAll(\"text,circle\").transition()
-        .duration(d3.event.altKey ? 7500 : 750)
-        .attr(\"transform\", function(d) { return \"translate(\" + x(d.x) + \",\" + y(d.y) + \")\"; });
-
-    transition.filter(\"circle\")
-        .attr(\"r\", function(d) { return k * d.r; });
-
-    transition.filter(\"text\")
-      .filter(function(d) { return d.parent === focus || d.parent === focus0; })
-        .style(\"fill-opacity\", function(d) { return d.parent === focus ? 1 : 0; })
-        .each(\"start\", function(d) { if (d.parent === focus) this.style.display = \"inline\"; })
-        .each(\"end\", function(d) { if (d.parent !== focus) this.style.display = \"none\"; });
-  }}
-);
-
-d3.select(self.frameElement).style(\"height\", outerDiameter + \"px\");
-
-</script>
-
-
-")))
+"
+      (c/generate-javascript-with-repository-variable repository)
+      "
+<script src=\"script.js\"></script>")))
   repository)
 
 (defun c/navigate-to-localhost (repository &optional port)
@@ -7024,94 +6916,7 @@ code can infer it automatically."
 
 (defun c/generate-coupling-json-script (repository)
   "Generate script to produce a weighted graph for REPOSITORY."
-  (with-temp-file "/tmp/coupling_csv_as_edge_bundling.py"
-    (insert
-     "## The input data is read from a Code Maat CSV file containing the result
-## of a <coupling> analysis.
-#######################################################################
-
-import argparse
-import csv
-import json
-import sys
-
-######################################################################
-## Parse input
-######################################################################
-
-def validate_content_by(heading, expected):
-        if not expected:
-                return # no validation
-        comparison = expected.split(',')
-        stripped = heading[0:len(comparison)] # allow extra fields
-        if stripped != comparison:
-                raise MergeError('Erroneous content. Expected = ' + expected + ', got = ' + ','.join(heading))
-
-def parse_csv(filename, parse_action, expected_format=None):
-        def read_heading_from(r):
-                p = next(r)
-                while p == []:
-                        p = next(r)
-                return p
-        with open(filename, 'rt', encoding=\"utf8\") as csvfile:
-                r = csv.reader(csvfile, delimiter=',')
-                heading = read_heading_from(r)
-                validate_content_by(heading, expected_format)
-                return [parse_action(row) for row in r]
-
-class LinkBetweenCoupled(object):
-        def __init__(self, entity, coupled, degree):
-                self.entity = entity
-                self.coupled = coupled
-                self.degree = int(degree)
-
-def parse_coupleds(csv_row):
-        return LinkBetweenCoupled(csv_row[0], csv_row[1], csv_row[2]) # 2020-07-05 AG: editing this to make it work with software dependencies, TODO rename all entity based naming to coupled stuff
-
-######################################################################
-## Assemble the individual entries into an aggregated structure
-######################################################################
-
-def link_to(existing_entitys, new_link):
-        if not new_link.entity in existing_entitys:
-                return {'name':new_link.entity, 'size':new_link.degree, 'imports':[new_link.coupled]}
-        existing_entity = existing_entitys[new_link.entity]
-        existing_entity['imports'].append(new_link.coupled)
-        existing_entity['size'] = existing_entity['size'] + new_link.degree
-        return existing_entity
-
-def aggregate_links_per_entity_in(coupled_links):
-        links_per_entity = {}
-        for coupled in coupled_links:
-                links_per_entity[coupled.entity] = link_to(links_per_entity, coupled)
-        return links_per_entity
-
-######################################################################
-## Output
-######################################################################
-
-def write_json(result):
-        print(json.dumps(result))
-
-######################################################################
-## Main
-######################################################################
-
-def run(args):
-        coupled_links = parse_csv(args.coupling,
-                                                        expected_format='entity,coupled,degree,average-revs',
-                                                        parse_action=parse_coupleds)
-        links_by_entity = aggregate_links_per_entity_in(coupled_links)
-        write_json(list(links_by_entity.values()))
-
-if __name__ == \"__main__\":
-        parser = argparse.ArgumentParser(description='Generates a JSON document suitable for coupling diagrams.')
-        parser.add_argument('--coupling', required=True, help='A CSV file containing the result of a coupling analysis')
-
-        args = parser.parse_args()
-        run(args)
-
-     "))
+  (c/copy-script-to-tmp "coupling_csv_as_edge_bundling.py")
   repository)
 
 (defun c/produce-coupling-json (repository)
@@ -7129,184 +6934,21 @@ if __name__ == \"__main__\":
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/edge-bundling/script.js" (format "/tmp/%s/" (f-filename repository)))
+  (c/copy-file "./pages/edge-bundling/style.css" (format "/tmp/%s/" (f-filename repository)))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
 <meta charset=\"utf-8\">
-<style>
-
-.node {
-  font: 300 11px \"Helvetica Neue\", Helvetica, Arial, sans-serif;
-  fill: #bbb;
-}
-
-.node:hover {
-  fill: #000;
-}
-
-.link {
-  stroke: steelblue;
-  stroke-opacity: 0.4;
-  fill: none;
-  pointer-events: none;
-}
-
-.node:hover,
-.node--source,
-.node--target {
-  font-weight: 700;
-}
-
-.node--source {
-  fill: #2ca02c;
-}
-
-.node--target {
-  fill: #d62728;
-}
-
-.link--source,
-.link--target {
-  stroke-opacity: 1;
-  stroke-width: 2px;
-}
-
-.link--source {
-  stroke: #d62728;
-}
-
-.link--target {
-  stroke: #2ca02c;
-}
-
-</style>
+<link rel=\"stylesheet\" href=\"style.css\">
 <body>
 <script src=\"d3/d3-v4.min.js\"></script>
-<script>
-
-var diameter = 960,
-    radius = diameter / 2,
-    innerRadius = radius - 120;
-
-var cluster = d3.cluster()
-    .size([360, innerRadius]);
-
-var line = d3.radialLine()
-    .curve(d3.curveBundle.beta(0.85))
-    .radius(function(d) { return d.y; })
-    .angle(function(d) { return d.x / 180 * Math.PI; });
-
-var svg = d3.select(\"body\").append(\"svg\")
-    .attr(\"width\", diameter)
-    .attr(\"height\", diameter)
-  .append(\"g\")
-    .attr(\"transform\", \"translate(\" + radius + \",\" + radius + \")\");
-
-var link = svg.append(\"g\").selectAll(\".link\"),
-    node = svg.append(\"g\").selectAll(\".node\");
-
-d3.json(\""
-      (f-filename repository)
-      "-edgebundling.json\", function(error, classes) {
-  if (error) throw error;
-
-  var root = packageHierarchy(classes)
-      .sum(function(d) { return d.size; });
-
-  cluster(root);
-
-  link = link
-    .data(packageImports(root.leaves()))
-    .enter().append(\"path\")
-      .each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
-      .attr(\"class\", \"link\")
-      .attr(\"d\", line);
-
-  node = node
-    .data(root.leaves())
-    .enter().append(\"text\")
-      .attr(\"class\", \"node\")
-      .attr(\"dy\", \"0.31em\")
-      .attr(\"transform\", function(d) { return \"rotate(\" + (d.x - 90) + \")translate(\" + (d.y + 8) + \",0)\" + (d.x < 180 ? \"\" : \"rotate(180)\"); })
-      .attr(\"text-anchor\", function(d) { return d.x < 180 ? \"start\" : \"end\"; })
-      .text(function(d) { return d.data.key; })
-      .on(\"mouseover\", mouseovered)
-      .on(\"mouseout\", mouseouted);
-});
-
-function mouseovered(d) {
-  node
-      .each(function(n) { n.target = n.source = false; });
-
-  link
-      .classed(\"link--target\", function(l) { if (l.target === d) return l.source.source = true; })
-      .classed(\"link--source\", function(l) { if (l.source === d) return l.target.target = true; })
-    .filter(function(l) { return l.target === d || l.source === d; })
-      .raise();
-
-  node
-      .classed(\"node--target\", function(n) { return n.target; })
-      .classed(\"node--source\", function(n) { return n.source; });
-}
-
-function mouseouted(d) {
-  link
-      .classed(\"link--target\", false)
-      .classed(\"link--source\", false);
-
-  node
-      .classed(\"node--target\", false)
-      .classed(\"node--source\", false);
-}
-
-// Lazily construct the package hierarchy from class names.
-function packageHierarchy(classes) {
-  var map = {};
-
-  function find(name, data) {
-    var node = map[name], i;
-    if (!node) {
-      node = map[name] = data || {name: name, children: []};
-      if (name.length) {
-        node.parent = find(name.substring(0, i = name.lastIndexOf(\"/\")));
-        node.parent.children.push(node);
-        node.key = name.substring(i + 1);
-      }
-    }
-    return node;
-  }
-
-  classes.forEach(function(d) {
-    find(d.name, d);
-  });
-
-  return d3.hierarchy(map[\"\"]);
-}
-
-// Return a list of imports for the given array of nodes.
-function packageImports(nodes) {
-  var map = {},
-      imports = [];
-
-  // Compute a map from name to node.
-  nodes.forEach(function(d) {
-    map[d.data.name] = d;
-  });
-
-  // For each import, construct a link from the source to target node.
-  nodes.forEach(function(d) {
-    if (d.data.imports) d.data.imports.forEach(function(i) {
-      if (map[i]) { // skip nodes that do not have a pair
-      imports.push(map[d.data.name].path(map[i]));
-    }});
-  });
-
-  return imports;
-}
-
-</script>
-")))
+"
+      (c/generate-javascript-with-repository-variable repository)
+      "
+<script src=\"script.js\"></script>"
+      )))
   repository)
 
 (defun c/show-coupling-graph-sync (repository date &optional port)
