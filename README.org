@@ -171,12 +171,23 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :ID:       29de5da7-8ba0-46a7-8afa-397b02d4642d
 :END:
 - https://ag91.github.io/blog/2021/01/12/emacs-as-your-code-compass-let-history-show-you-which-files-to-edit-next/
-*** TODO code communication
+*** DONE code communication
+:PROPERTIES:
+:CREATED:  [2021-01-22 Fri 20:32]
+:ID:       ceb52892-7b08-4171-8887-670254989b4c
+:END:
 :LOGBOOK:
 CLOCK: [2021-01-12 Tue 22:16]
 :END:
+- [[https://ag91.github.io/blog/2021/01/22/emacs-as-your-code-compass-find-collaborators-you-should-(chit)-chat-with/]]
 *** TODO code knowledge
+:LOGBOOK:
+CLOCK: [2021-01-22 Fri 20:32]
+:END:
 *** TODO code stability
+:PROPERTIES:
+:ID:       fca4bd0a-8c67-4482-8692-a32f98ea2438
+:END:
 *** TODO fragmentation
 *** TODO word analysis
 ** Contributing 

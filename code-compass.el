@@ -6718,14 +6718,14 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively 'c/request-date)))
   (--> repository
-       (c/produce-git-report it date)
-       c/produce-code-maat-revisions-report
-       c/produce-cloc-report
-       c/generate-merger-script
-       c/generate-d3-lib
-       c/produce-json
-       c/generate-host-enclosure-diagram-html
-       (c/run-server-and-navigate it port)))
+    (c/produce-git-report it date)
+    c/produce-code-maat-revisions-report
+    c/produce-cloc-report
+    c/generate-merger-script
+    c/generate-d3-lib
+    c/produce-json
+    c/generate-host-enclosure-diagram-html
+    (c/run-server-and-navigate it port)))
 
 (defun c/show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
@@ -6761,12 +6761,12 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 (defun c/find-indentation (lines-without-text)
   "Infer indentation level in LINES-WITHOUT-TEXT. If no indentation present in file, defaults to 2."
   (or (--> lines-without-text
-           (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
-           (let ((spaces-ind (-sort '< (--remove (eq 0 it) (-map 'c/first it))))
-                 (tabs-ind (-sort '< (--remove (eq 0 it) (-map 'c/second it)))))
-             (if (> (length spaces-ind) (length tabs-ind))
-                 (c/first spaces-ind)
-               (c/first tabs-ind))))
+        (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
+        (let ((spaces-ind (-sort '< (--remove (eq 0 it) (-map 'c/first it))))
+              (tabs-ind (-sort '< (--remove (eq 0 it) (-map 'c/second it)))))
+          (if (> (length spaces-ind) (length tabs-ind))
+              (c/first spaces-ind)
+            (c/first tabs-ind))))
       2))
 
 (defun c/convert-tabs-to-spaces (line-without-text n)
@@ -6780,11 +6780,11 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 (defun c/as-logical-indents (lines &optional opts)
   "Calculate logical indentations of LINES. Try to infer how many space is an indent unless OPTS provides it."
   (let ((indentation (or opts (c/find-indentation lines))))
-   (list
+    (list
      (--map
       (--> it
-           (c/convert-tabs-to-spaces it indentation)
-           (c/calculate-complexity it indentation))
+        (c/convert-tabs-to-spaces it indentation)
+        (c/calculate-complexity it indentation))
       lines)
      indentation)))
 
@@ -6803,12 +6803,12 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 (defun c/calculate-complexity-stats (code &optional opts)
   "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation."
   (--> code
-       ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
-       c/split-on-newlines
-       c/remove-empty-lines
-       c/remove-text-after-indentation
-       (c/as-logical-indents it opts)
-       c/stats-from))
+    ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
+    c/split-on-newlines
+    c/remove-empty-lines
+    c/remove-text-after-indentation
+    (c/as-logical-indents it opts)
+    c/stats-from))
 
 (defun c/calculate-complexity-current-buffer (&optional indentation)
   "Calculate complexity of the current buffer contents.
@@ -6853,12 +6853,12 @@ code can infer it automatically."
 
 (defun c/calculate-complexity-over-commits (file &optional opts)
   (--> (call-interactively 'c/request-date)
-       (c/retrieve-commits-up-to-date-touching-file file it)
-       (--map
-        (--> it
-             (list it (c/retrieve-file-at-commit-with-git file it))
-             (list (c/first it) (c/calculate-complexity-stats (c/second it) opts)))
-        it)))
+    (c/retrieve-commits-up-to-date-touching-file file it)
+    (--map
+     (--> it
+       (list it (c/retrieve-file-at-commit-with-git file it))
+       (list (c/first it) (c/calculate-complexity-stats (c/second it) opts)))
+     it)))
 
 (defun c/plot-csv-file-with-graph-cli (file)
   "Plot CSV FILE with graph-cli."
@@ -6895,10 +6895,10 @@ code can infer it automatically."
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively 'c/request-date)))
   (--> repository
-       (c/produce-git-report it date)
-       c/produce-code-maat-abs-churn-report
-       (format"/tmp/%s-abs-churn.csv" (f-filename it))
-       c/plot-csv-file-with-graph-cli))
+    (c/produce-git-report it date)
+    c/produce-code-maat-abs-churn-report
+    (format"/tmp/%s-abs-churn.csv" (f-filename it))
+    c/plot-csv-file-with-graph-cli))
 
 (defun c/show-code-churn (repository date)
   "Show how much code was added and removed from REPOSITORY from a DATE."
@@ -6957,13 +6957,13 @@ code can infer it automatically."
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively 'c/request-date)))
   (--> repository
-       (c/produce-git-report it nil date)
-       c/produce-code-maat-coupling-report
-       c/generate-coupling-json-script
-       c/generate-d3-v4-lib
-       c/produce-coupling-json
-       c/generate-host-edge-bundling-html
-       (c/run-server-and-navigate it port)))
+    (c/produce-git-report it nil date)
+    c/produce-code-maat-coupling-report
+    c/generate-coupling-json-script
+    c/generate-d3-v4-lib
+    c/produce-coupling-json
+    c/generate-host-edge-bundling-html
+    (c/run-server-and-navigate it port)))
 
 (defun c/show-coupling-graph (repository date &optional port)
   "Show REPOSITORY edge bundling for code coupling up to DATE. Serve graph on PORT."
@@ -6977,11 +6977,11 @@ code can infer it automatically."
 (defun c/get-coupling-alist-sync (repository)
   "Get list of coupled files in REPOSITORY async."
   (--> repository
-       (c/produce-git-report it nil)
-       c/produce-code-maat-coupling-report
-       (c/get-analysis-as-string-from-csv it "coupling")
-       (c/add-filename-to-analysis-columns repository it)
-       (--map (s-split "," it) (cdr it))))
+    (c/produce-git-report it nil)
+    c/produce-code-maat-coupling-report
+    (c/get-analysis-as-string-from-csv it "coupling")
+    (c/add-filename-to-analysis-columns repository it)
+    (--map (s-split "," it) (cdr it))))
 
 (defun c/get-coupling-alist (repository fun)
   "FUN takes a list of coupled files in REPOSITORY."
@@ -7037,22 +7037,168 @@ code can infer it automatically."
   (let ((choose-file
          (lambda (files)
            (--> files
-                (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
-                (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
-                (-map (lambda (file)
-                        (when (or (string= (file-truename (buffer-file-name)) (file-truename (car file)))
-                                  (string= (file-truename (buffer-file-name)) (file-truename (nth 1 file))))
-                          (car
-                           (--remove (string= (file-truename (buffer-file-name)) (file-truename it)) (-take 2 file)))))
-                      it)
-                (-remove 'null it)
-                (if (null it)
-                    (message "No coupled file found!")
-                  (completing-read "Find coupled file: " it nil 't))))))
+             (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
+             (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+             (-map (lambda (file)
+                     (when (or (string= (file-truename (buffer-file-name)) (file-truename (car file)))
+                               (string= (file-truename (buffer-file-name)) (file-truename (nth 1 file))))
+                       (car
+                        (--remove (string= (file-truename (buffer-file-name)) (file-truename it)) (-take 2 file)))))
+                   it)
+             (-remove 'null it)
+             (if (null it)
+                 (message "No coupled file found!")
+               (completing-read "Find coupled file: " it nil 't))))))
     (--> (vc-root-dir)
-         (c/get-coupled-files-alist it choose-file)
-         (when (f-file-p it) (find-file it)))))
+      (c/get-coupled-files-alist it choose-file)
+      (when (f-file-p it) (find-file it)))))
 ;; END find coupled files
+
+;; BEGIN code communication
+(defun c/produce-code-maat-communication-report (repository)
+  "Create code-maat communication report for REPOSITORY."
+  (c/run-code-maat "communication" repository)
+  repository)
+
+(defun c/generate-communication-json-script (repository)
+  "Generate script to produce a weighted graph for REPOSITORY."
+  (c/copy-script-to-tmp "communication_csv_as_edge_bundling.py")
+  repository)
+
+(defun c/generate-communication-json-script1 (repository)
+  "Generate python script."
+  (with-temp-file "/tmp/communication_csv_as_edge_bundling.py"
+    (insert
+     "
+#!/bin/env python
+
+#######################################################################
+## This program generates a JSON document suitable for a D3.js
+## Hierarchical Edge Bundling visualization (see https://gist.github.com/mbostock/7607999)
+##
+## The input data is read from a Code Maat CSV file containing the result
+## of a <communication> analysis.
+#######################################################################
+
+import argparse
+import csv
+import json
+import sys
+
+######################################################################
+## Parse input
+######################################################################
+
+def validate_content_by(heading, expected):
+        if not expected:
+                return # no validation
+        comparison = expected.split(',')
+        stripped = heading[0:len(comparison)] # allow extra fields
+        if stripped != comparison:
+                raise MergeError('Erroneous content. Expected = ' + expected + ', got = ' + ','.join(heading))
+
+def parse_csv(filename, parse_action, expected_format=None):
+        def read_heading_from(r):
+                p = r.next()
+                while p == []:
+                        p = r.next()
+                return p
+        with open(filename, 'rb') as csvfile:
+                r = csv.reader(csvfile, delimiter=',')
+                heading = read_heading_from(r)
+                validate_content_by(heading, expected_format)
+                return [parse_action(row) for row in r]
+
+class LinkBetweenPeer(object):
+        def __init__(self, author, peer, strength):
+                self.author = author
+                self.peer = peer
+                self.strength = int(strength)
+
+def parse_peers(csv_row):
+        return LinkBetweenPeer(csv_row[0], csv_row[1], csv_row[4])
+
+######################################################################
+## Assemble the individual entries into an aggregated structure
+######################################################################
+
+def link_to(existing_authors, new_link):
+        if not new_link.author in existing_authors:
+                return {'name':new_link.author, 'size':new_link.strength, 'imports':[new_link.peer]}
+        existing_author = existing_authors[new_link.author]
+        existing_author['imports'].append(new_link.peer)
+        existing_author['size'] = existing_author['size'] + new_link.strength
+        return existing_author
+
+def aggregate_links_per_author_in(peer_links):
+        links_per_author = {}
+        for peer in peer_links:
+                links_per_author[peer.author] = link_to(links_per_author, peer)
+        return links_per_author
+
+######################################################################
+## Output
+######################################################################
+
+def write_json(result):
+        print json.dumps(result)
+
+######################################################################
+## Main
+######################################################################
+
+def run(args):
+        peer_links = parse_csv(args.communication,
+                                                        expected_format='author,peer,shared,average,strength',
+                                                        parse_action=parse_peers)
+        links_by_author = aggregate_links_per_author_in(peer_links)
+        write_json(links_by_author.values())
+
+if __name__ == \"__main__\":
+        parser = argparse.ArgumentParser(description='Generates a JSON document suitable for communication diagrams.')
+        parser.add_argument('--communication', required=True, help='A CSV file containing the result of a communication analysis')
+
+        args = parser.parse_args()
+        run(args)
+"
+     ))
+  repository)
+
+(defun c/produce-communication-json (repository)
+  "Generate REPOSITORY age json."
+  (message "Produce age json...")
+  (shell-command
+   (format
+    "cd /tmp; python3 communication_csv_as_edge_bundling.py --communication %s-communication.csv > /tmp/%s/%s-edgebundling.json"
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)))
+  repository)
+
+(defun c/show-code-communication-sync (repository date &optional port)
+  "Show REPOSITORY edge bundling for code communication from DATE. Green edges is incoming (dependant) and red outgoing (dependencies).Optionally set the PORT on which to serve the graph."
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)))
+  (--> repository
+    (c/produce-git-report it date)
+    c/produce-code-maat-communication-report
+    c/generate-communication-json-script
+    c/generate-d3-v4-lib
+    c/produce-communication-json
+    c/generate-host-edge-bundling-html
+    (c/run-server-and-navigate it port)))
+
+(defun c/show-code-communication (repository date &optional port)
+  "Show REPOSITORY edge bundling for code communication from DATE. Optionally define PORT on which to serve graph."
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-code-communication-sync repository date port))
+;; END code communication
 
 (provide 'code-compass)
 ;;; code-compass ends here

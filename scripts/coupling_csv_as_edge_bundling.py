@@ -1,3 +1,5 @@
+#!/bin/env python
+
 """
 The input data is read from a Code Maat CSV file containing the result
 of a <coupling> analysis.
