@@ -7065,105 +7065,6 @@ code can infer it automatically."
   (c/copy-script-to-tmp "communication_csv_as_edge_bundling.py")
   repository)
 
-(defun c/generate-communication-json-script1 (repository)
-  "Generate python script."
-  (with-temp-file "/tmp/communication_csv_as_edge_bundling.py"
-    (insert
-     "
-#!/bin/env python
-
-#######################################################################
-## This program generates a JSON document suitable for a D3.js
-## Hierarchical Edge Bundling visualization (see https://gist.github.com/mbostock/7607999)
-##
-## The input data is read from a Code Maat CSV file containing the result
-## of a <communication> analysis.
-#######################################################################
-
-import argparse
-import csv
-import json
-import sys
-
-######################################################################
-## Parse input
-######################################################################
-
-def validate_content_by(heading, expected):
-        if not expected:
-                return # no validation
-        comparison = expected.split(',')
-        stripped = heading[0:len(comparison)] # allow extra fields
-        if stripped != comparison:
-                raise MergeError('Erroneous content. Expected = ' + expected + ', got = ' + ','.join(heading))
-
-def parse_csv(filename, parse_action, expected_format=None):
-        def read_heading_from(r):
-                p = r.next()
-                while p == []:
-                        p = r.next()
-                return p
-        with open(filename, 'rb') as csvfile:
-                r = csv.reader(csvfile, delimiter=',')
-                heading = read_heading_from(r)
-                validate_content_by(heading, expected_format)
-                return [parse_action(row) for row in r]
-
-class LinkBetweenPeer(object):
-        def __init__(self, author, peer, strength):
-                self.author = author
-                self.peer = peer
-                self.strength = int(strength)
-
-def parse_peers(csv_row):
-        return LinkBetweenPeer(csv_row[0], csv_row[1], csv_row[4])
-
-######################################################################
-## Assemble the individual entries into an aggregated structure
-######################################################################
-
-def link_to(existing_authors, new_link):
-        if not new_link.author in existing_authors:
-                return {'name':new_link.author, 'size':new_link.strength, 'imports':[new_link.peer]}
-        existing_author = existing_authors[new_link.author]
-        existing_author['imports'].append(new_link.peer)
-        existing_author['size'] = existing_author['size'] + new_link.strength
-        return existing_author
-
-def aggregate_links_per_author_in(peer_links):
-        links_per_author = {}
-        for peer in peer_links:
-                links_per_author[peer.author] = link_to(links_per_author, peer)
-        return links_per_author
-
-######################################################################
-## Output
-######################################################################
-
-def write_json(result):
-        print json.dumps(result)
-
-######################################################################
-## Main
-######################################################################
-
-def run(args):
-        peer_links = parse_csv(args.communication,
-                                                        expected_format='author,peer,shared,average,strength',
-                                                        parse_action=parse_peers)
-        links_by_author = aggregate_links_per_author_in(peer_links)
-        write_json(links_by_author.values())
-
-if __name__ == \"__main__\":
-        parser = argparse.ArgumentParser(description='Generates a JSON document suitable for communication diagrams.')
-        parser.add_argument('--communication', required=True, help='A CSV file containing the result of a communication analysis')
-
-        args = parser.parse_args()
-        run(args)
-"
-     ))
-  repository)
-
 (defun c/produce-communication-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
@@ -7199,6 +7100,212 @@ if __name__ == \"__main__\":
     (call-interactively 'c/request-date)))
   (c/async-run 'c/show-code-communication-sync repository date port))
 ;; END code communication
+
+;; BEGIN code knowledge
+(defun c/produce-code-maat-main-dev-report (repository)
+  "Create code-maat main-dev report for REPOSITORY."
+  (c/run-code-maat "main-dev" repository)
+  repository)
+
+(defun c/generate-knowledge-json-script (repository)
+  "Generate python script."
+  (c/copy-script-to-tmp "knowledge_csv_as_enclosure_diagram.py")
+  repository)
+
+(defun c/produce-knowledge-json (repository)
+  "Generate REPOSITORY age json."
+  (message "Produce knowledge json...")
+  (shell-command
+   (format
+    "cd /tmp; python3 knowledge_csv_as_enclosure_diagram.py --structure cloc-%s.csv --owners %s-main-dev.csv --authors /tmp/%s/%s-authors.csv > /tmp/%s/%s_knowledge.json"
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)
+    (f-filename repository)))
+  repository)
+
+(defun c/insert-authors-colors-in-file (authors-colors repository)
+  (with-temp-file (format "/tmp/%s/%s-authors.csv" (f-filename repository) (f-filename repository))
+    (insert "author,color\n")
+    (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
+
+(defcustom c/authors-colors (list
+                             "red"
+                             "blue"
+                             "orange"
+                             "gray"
+                             "green"
+                             "violet"
+                             "pink"
+                             "darkyellow"
+                             "brown"
+                             "aquamarine"
+                             "blueviolet"
+                             "burlywood"
+                             "cadetblue"
+                             "chartreuse"
+                             "chocolate"
+                             "coral"
+                             "cornflowerblue"
+                             "cyan"
+                             "darkblue"
+                             "darkcyan"
+                             "darkgoldenrod"
+                             "darkgray"
+                             "darkgreen"
+                             "darkkhaki"
+                             "darkmagenta"
+                             "darkolivegreen"
+                             "darkorange"
+                             "darkorchid"
+                             "darkred"
+                             "darksalmon"
+                             "darkseagreen"
+                             "darkslateblue"
+                             "darkslategray"
+                             "darkturquoise"
+                             "darkviolet"
+                             "deeppink"
+                             "deepskyblue"
+                             "dimgray"
+                             "dodgerblue"
+                             "firebrick"
+                             "forestgreen"
+                             "fuchsia"
+                             "gold"
+                             "goldenrod"
+                             "greenyellow"
+                             "hotpink"
+                             "indianred"
+                             "indigo"
+                             "lawngreen"
+                             "lightcoral"
+                             "lightcyan"
+                             "lightgoldenrodyellow"
+                             "lightgray"
+                             "lightgreen"
+                             "lightpink"
+                             "lightsalmon"
+                             "lightseagreen"
+                             "lightskyblue"
+                             "lightslategray"
+                             "lightsteelblue"
+                             "lightyellow"
+                             "lime"
+                             "limegreen"
+                             "linen"
+                             "magenta"
+                             "maroon"
+                             "mediumaquamarine"
+                             "mediumblue"
+                             "mediumorchid"
+                             "mediumpurple"
+                             "mediumseagreen"
+                             "mediumslateblue"
+                             "mediumspringgreen"
+                             "mediumturquoise"
+                             "mediumvioletred"
+                             "midnightblue"
+                             "mintcream"
+                             "mistyrose"
+                             "moccasin"
+                             "navajowhite"
+                             "navy"
+                             "oldlace"
+                             "olive"
+                             "olivedrab"
+                             "orangered"
+                             "orchid"
+                             "palegoldenrod"
+                             "palegreen"
+                             "paleturquoise"
+                             "palevioletred"
+                             "papayawhip"
+                             "peachpuff"
+                             "peru"
+                             "plum"
+                             "powderblue"
+                             "purple"
+                             "rosybrown"
+                             "royalblue"
+                             "saddlebrown"
+                             "salmon"
+                             "sandybrown"
+                             "seagreen"
+                             "seashell"
+                             "sienna"
+                             "silver"
+                             "skyblue"
+                             "slateblue"
+                             "slategray"
+                             "snow"
+                             "springgreen"
+                             "steelblue"
+                             "tan"
+                             "teal"
+                             "thistle"
+                             "tomato"
+                             "turquoise"
+                             "wheat"
+                             "whitesmoke"
+                             "yellow"
+                             "yellowgreen")
+  "Colors to use for authors.")
+
+(defun c/generate-list-authors-colors (repository)
+  "Generate list of authors of REPOSITORY."
+  (--> (s-concat "cd " repository "; git log --format='%an' | sort | uniq")
+    shell-command-to-string
+    (s-split "\n" it)
+    (--remove (s-blank? (s-trim it)) it)
+    (-zip it c/authors-colors)
+    (c/insert-authors-colors-in-file it repository))
+  repository)
+
+(defun c/generate-host-knowledge-enclosure-diagram-html (repository)
+  "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/knowledge-enclosure-diagram/script.js" (format "/tmp/%s/" (f-filename repository)))
+  (c/copy-file "./pages/knowledge-enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
+  (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
+    (insert
+     (concat
+      "<!DOCTYPE html>
+<meta charset=\"utf-8\">
+<link rel=\"stylesheet\" href=\"style.css\">
+<body>
+<script src=\"d3/d3.min.js\"></script>
+"
+      (c/generate-javascript-with-repository-variable repository)
+      "
+<script src=\"script.js\"></script>"
+      )))
+  repository)
+
+(defun c/show-knowledge-graph-sync (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (--> repository
+    (c/produce-git-report it date)
+    c/produce-code-maat-main-dev-report
+    c/produce-cloc-report
+    c/generate-knowledge-json-script
+    c/generate-d3-lib
+    c/generate-list-authors-colors
+    c/produce-knowledge-json
+    c/generate-host-knowledge-enclosure-diagram-html
+    (c/run-server-and-navigate it port)))
+
+(defun c/show-knowledge-graph (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-knowledge-graph-sync repository date port))
+;; END code knowledge
 
 (provide 'code-compass)
 ;;; code-compass ends here

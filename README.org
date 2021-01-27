@@ -180,13 +180,21 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 CLOCK: [2021-01-12 Tue 22:16]
 :END:
 - [[https://ag91.github.io/blog/2021/01/22/emacs-as-your-code-compass-find-collaborators-you-should-(chit)-chat-with/]]
-*** TODO code knowledge
+*** DONE code knowledge
+:PROPERTIES:
+:CREATED:  [2021-01-31 Sun 11:48]
+:ID:       04064490-aaa7-44c3-a31c-a8d223db31a0
+:END:
 :LOGBOOK:
 CLOCK: [2021-01-22 Fri 20:32]
 :END:
+https://ag91.github.io/blog/2021/01/28/emacs-as-your-code-compass-who-can-i-ask-for-help/
 *** TODO code stability
 :PROPERTIES:
 :ID:       fca4bd0a-8c67-4482-8692-a32f98ea2438
+:END:
+:LOGBOOK:
+CLOCK: [2021-01-31 Sun 11:48]
 :END:
 *** TODO fragmentation
 *** TODO word analysis
