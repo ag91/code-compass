@@ -97,6 +97,9 @@
 (defun c/third (l)
   (nth 2 l))
 
+(defun c/temp-dir (repository)
+  (format "/tmp/%s/" (f-filename repository)))
+
 (defun c/produce-git-report (repository date &optional before-date)
   "Create git report for REPOSITORY with a Git log starting at DATE. Define optionally a BEFORE-DATE."
   (interactive
@@ -104,21 +107,13 @@
   (message "Producing git report...")
   (shell-command
    (s-concat
-    (format "cd %s;" repository)
-    "git log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
-    (if date
-        (format
-         "--after=%s "
-         date)
-      "")
-    (if before-date
-        (format
-         "--before=%s "
-         before-date)
-      "")
-    (format
-     "> /tmp/%s.log"
-     (f-filename repository))))
+    (format "git -C %s" repository)
+    " log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
+    (when date
+      (format "--after=%s " date))
+    (when before-date
+      (format "--before=%s " before-date))
+    (format "> /tmp/%s.log" (f-filename repository))))
   repository)
 
 (defun c/run-code-maat (command repository)
@@ -126,10 +121,8 @@
   (message "Producing code-maat %s report for %s..." command repository)
   (shell-command
    (format
-    "%s -l /data/%s.log -c git2 -a %s > /tmp/%s-%s.csv"
+    "%1$s -l /data/%2$s.log -c git2 -a %3$s > /tmp/%2$s-%3$s.csv"
     c/code-maat-command
-    (f-filename repository)
-    command
     (f-filename repository)
     command)))
 
@@ -6648,10 +6641,7 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
   (message "Produce json...")
   (shell-command
    (format
-    "cd /tmp; python3 csv_as_enclosure_json.py --structure cloc-%s.csv --weights %s-revisions.csv > /tmp/%s/%s_hotspot_proto.json"
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
+    "cd /tmp; python3 csv_as_enclosure_json.py --structure cloc-%1$s.csv --weights %1$s-revisions.csv > /tmp/%1$s/%1$s_hotspot_proto.json"
     (f-filename repository)))
   repository)
 
@@ -6660,8 +6650,8 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
 
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
-  (c/copy-file "./pages/enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
-  (c/copy-file "./pages/enclosure-diagram/script.js" (format "/tmp/%s/" (f-filename repository)))
+  (c/copy-file "./pages/enclosure-diagram/style.css" (c/temp-dir repository))
+  (c/copy-file "./pages/enclosure-diagram/script.js" (c/temp-dir repository))
   (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
     (insert
      (concat
@@ -6688,7 +6678,7 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
   (let ((httpd-host 'local)
         (httpd-port (or port 8888)))
     (httpd-stop)
-    (ignore-errors (httpd-serve-directory  (format "/tmp/%s/" (f-filename repository)))))
+    (ignore-errors (httpd-serve-directory (c/temp-dir repository))))
   repository)
 
 (defun c/run-server-and-navigate (repository &optional port)
@@ -6924,19 +6914,16 @@ code can infer it automatically."
   (message "Produce coupling json...")
   (shell-command
    (format
-    "cd /tmp; python3 coupling_csv_as_edge_bundling.py --coupling %s-coupling.csv > /tmp/%s/%s-edgebundling.json"
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
+    "cd /tmp; python3 coupling_csv_as_edge_bundling.py --coupling %1$s-coupling.csv > /tmp/%1$s/%1$s-edgebundling.json"
     (f-filename repository)))
   repository)
 
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
-  (c/copy-file "./pages/edge-bundling/script.js" (format "/tmp/%s/" (f-filename repository)))
-  (c/copy-file "./pages/edge-bundling/style.css" (format "/tmp/%s/" (f-filename repository)))
-  (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
+  (c/copy-file "./pages/edge-bundling/script.js" (c/temp-dir repository))
+  (c/copy-file "./pages/edge-bundling/style.css" (c/temp-dir repository))
+  (with-temp-file (format "/tmp/%1$s/%1$szoomable.html" (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
@@ -7070,10 +7057,7 @@ code can infer it automatically."
   (message "Produce age json...")
   (shell-command
    (format
-    "cd /tmp; python3 communication_csv_as_edge_bundling.py --communication %s-communication.csv > /tmp/%s/%s-edgebundling.json"
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
+    "cd /tmp; python3 communication_csv_as_edge_bundling.py --communication %1$s-communication.csv > /tmp/%1$s/%1$s-edgebundling.json"
     (f-filename repository)))
   repository)
 
@@ -7117,17 +7101,12 @@ code can infer it automatically."
   (message "Produce knowledge json...")
   (shell-command
    (format
-    "cd /tmp; python3 knowledge_csv_as_enclosure_diagram.py --structure cloc-%s.csv --owners %s-main-dev.csv --authors /tmp/%s/%s-authors.csv > /tmp/%s/%s_knowledge.json"
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
-    (f-filename repository)
+    "cd /tmp; python3 knowledge_csv_as_enclosure_diagram.py --structure cloc-%1$s.csv --owners %1$s-main-dev.csv --authors /tmp/%1$s/%1$s-authors.csv > /tmp/%1$s/%1$s_knowledge.json"
     (f-filename repository)))
   repository)
 
 (defun c/insert-authors-colors-in-file (authors-colors repository)
-  (with-temp-file (format "/tmp/%s/%s-authors.csv" (f-filename repository) (f-filename repository))
+  (with-temp-file (format "/tmp/%1$s/%1$s-authors.csv" (f-filename repository))
     (insert "author,color\n")
     (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
 
@@ -7266,9 +7245,9 @@ code can infer it automatically."
 
 (defun c/generate-host-knowledge-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
-  (c/copy-file "./pages/knowledge-enclosure-diagram/script.js" (format "/tmp/%s/" (f-filename repository)))
-  (c/copy-file "./pages/knowledge-enclosure-diagram/style.css" (format "/tmp/%s/" (f-filename repository)))
-  (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
+  (c/copy-file "./pages/knowledge-enclosure-diagram/script.js" (c/temp-dir repository))
+  (c/copy-file "./pages/knowledge-enclosure-diagram/style.css" (c/temp-dir repository))
+  (with-temp-file (format "/tmp/%1$s/%1$szoomable.html" (f-filename repository))
     (insert
      (concat
       "<!DOCTYPE html>
