@@ -98,7 +98,24 @@
   (nth 2 l))
 
 (defun c/temp-dir (repository)
-  (format "/tmp/%s/" (f-filename repository)))
+  (format "/tmp/code-compass-%s/" (f-filename repository)))
+
+(defmacro c/in-directory (directory &rest body)
+  "Executes BODY in DIRECTORY by temporarily changing current buffer's default directory to DIRECTORY."
+  `(let ((current-dir default-directory))
+     (unwind-protect
+         (progn
+           (cd ,directory)
+           ,@body)
+       (cd current-dir))))
+
+(defmacro c/in-temp-directory (repository &rest body)
+  "Executes BODY in temporary directory created for analysed REPOSITORY."
+  `(progn
+     (mkdir (c/temp-dir repository) t)
+     (c/in-directory
+      (c/temp-dir repository)
+      ,@body)))
 
 (defun c/produce-git-report (repository date &optional before-date)
   "Create git report for REPOSITORY with a Git log starting at DATE. Define optionally a BEFORE-DATE."
@@ -113,7 +130,7 @@
       (format "--after=%s " date))
     (when before-date
       (format "--before=%s " before-date))
-    (format "> /tmp/%s.log" (f-filename repository))))
+    "> gitreport.log"))
   repository)
 
 (defun c/run-code-maat (command repository)
@@ -121,7 +138,7 @@
   (message "Producing code-maat %s report for %s..." command repository)
   (shell-command
    (format
-    "%1$s -l /data/%2$s.log -c git2 -a %3$s > /tmp/%2$s-%3$s.csv"
+    "%1$s -l /data/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
     c/code-maat-command
     (f-filename repository)
     command)))
@@ -135,7 +152,7 @@
   "Create cloc report for REPOSITORY."
   (message "Producing cloc report...")
   (shell-command
-   (format "cd %s; cloc ./ --by-file --csv --quiet --report-file=/tmp/cloc-%s.csv" repository (f-filename repository)))
+   (format "(cd %s; cloc ./ --by-file --csv --quiet) > cloc.csv" repository))
   repository)
 
 (defun c/expand-file-name (file-name)
@@ -144,18 +161,15 @@
 (defun c/copy-file (file-name directory)
   (copy-file (c/expand-file-name file-name) directory t))
 
-(defun c/copy-script-to-tmp (script)
-  (c/copy-file (c/expand-file-name (format "./scripts/%s" script)) "/tmp/"))
-
 (defun c/generate-merger-script (repository)
   "Generate a Python script to give weights to the circle diagram of REPOSITORY."
-  (c/copy-script-to-tmp "csv_as_enclosure_json.py")
+  (c/copy-file "./scripts/csv_as_enclosure_json.py" (c/temp-dir repository))
   repository)
 
 (defun c/generate-d3-lib (repository)
   "Make available the D3 library for REPOSITORY. This is just to not depend on a network connection."
-  (mkdir (format "/tmp/%s/d3/" (f-filename repository)) t)
-  (with-temp-file (format "/tmp/%s/d3/d3.min.js" (f-filename repository))
+  (mkdir "d3" t)
+  (with-temp-file "d3/d3.min.js"
     (insert (base64-decode-string
              "IWZ1bmN0aW9uKCl7ZnVuY3Rpb24gbihuLHQpe3JldHVybiB0Pm4/LTE6bj50PzE6bj49dD8wOjAv
 MH1mdW5jdGlvbiB0KG4pe3JldHVybiBudWxsIT1uJiYhaXNOYU4obil9ZnVuY3Rpb24gZShuKXty
@@ -2736,8 +2750,8 @@ ZHVsZSYmbW9kdWxlLmV4cG9ydHM/bW9kdWxlLmV4cG9ydHM9R286dGhpcy5kMz1Hb30oKTsK"
 
 (defun c/generate-d3-v4-lib (repository)
   "Make available the D3 v4 library for REPOSITORY. This is just to not depend on a network connection."
-  (mkdir (format "/tmp/%s/d3/" (f-filename repository)) t)
-  (with-temp-file (format "/tmp/%s/d3/d3-v4.min.js" (f-filename repository))
+  (mkdir "d3" t)
+  (with-temp-file "d3/d3-v4.min.js"
     (insert (base64-decode-string
              "Ly8gaHR0cHM6Ly9kM2pzLm9yZyBWZXJzaW9uIDQuMTMuMC4gQ29weXJpZ2h0IDIwMTggTWlrZSBC
 b3N0b2NrLgooZnVuY3Rpb24odCxuKXsib2JqZWN0Ij09dHlwZW9mIGV4cG9ydHMmJiJ1bmRlZmlu
@@ -6640,36 +6654,20 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
   "Produce json for REPOSITORY."
   (message "Produce json...")
   (shell-command
-   (format
-    "cd /tmp; python3 csv_as_enclosure_json.py --structure cloc-%1$s.csv --weights %1$s-revisions.csv > /tmp/%1$s/%1$s_hotspot_proto.json"
-    (f-filename repository)))
+   "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json")
   repository)
-
-(defun c/generate-javascript-with-repository-variable (repository)
-  (concat "<script> var repository = \"" (f-filename repository) "\"; </script>"))
 
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
   (c/copy-file "./pages/enclosure-diagram/style.css" (c/temp-dir repository))
   (c/copy-file "./pages/enclosure-diagram/script.js" (c/temp-dir repository))
-  (with-temp-file (format "/tmp/%s/%szoomable.html" (f-filename repository) (f-filename repository))
-    (insert
-     (concat
-      "<!DOCTYPE html>
-<meta charset=\"utf-8\">
-<link rel=\"stylesheet\" href=\"style.css\">
-<body>
-<script src=\"d3/d3.min.js\"></script>
-"
-      (c/generate-javascript-with-repository-variable repository)
-      "
-<script src=\"script.js\"></script>")))
+  (c/copy-file "./pages/enclosure-diagram/zoomable.html" (c/temp-dir repository))
   repository)
 
 (defun c/navigate-to-localhost (repository &optional port)
   "Navigate to served directory for REPOSITORY, optionally at specified PORT."
   (let ((port (or port 8888)))
-    (browse-url (format "http://localhost:%s/%szoomable.html" port (f-filename repository))))
+    (browse-url (format "http://localhost:%s/zoomable.html" port)))
   (sleep-for 1)
   repository)
 
@@ -6707,15 +6705,17 @@ eT1ZXyxPYmplY3QuZGVmaW5lUHJvcGVydHkodCwiX19lc01vZHVsZSIse3ZhbHVlOiEwfSl9KTsK"
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively 'c/request-date)))
-  (--> repository
-    (c/produce-git-report it date)
-    c/produce-code-maat-revisions-report
-    c/produce-cloc-report
-    c/generate-merger-script
-    c/generate-d3-lib
-    c/produce-json
-    c/generate-host-enclosure-diagram-html
-    (c/run-server-and-navigate it port)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it date)
+        c/produce-code-maat-revisions-report
+        c/produce-cloc-report
+        c/generate-merger-script
+        c/generate-d3-lib
+        c/produce-json
+        c/generate-host-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
@@ -6884,11 +6884,13 @@ code can infer it automatically."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively 'c/request-date)))
-  (--> repository
-    (c/produce-git-report it date)
-    c/produce-code-maat-abs-churn-report
-    (format"/tmp/%s-abs-churn.csv" (f-filename it))
-    c/plot-csv-file-with-graph-cli))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it date)
+        c/produce-code-maat-abs-churn-report
+        "abs-churn.csv"
+        c/plot-csv-file-with-graph-cli)))
 
 (defun c/show-code-churn (repository date)
   "Show how much code was added and removed from REPOSITORY from a DATE."
@@ -6906,36 +6908,21 @@ code can infer it automatically."
 
 (defun c/generate-coupling-json-script (repository)
   "Generate script to produce a weighted graph for REPOSITORY."
-  (c/copy-script-to-tmp "coupling_csv_as_edge_bundling.py")
+  (c/copy-file "./scripts/coupling_csv_as_edge_bundling.py" (c/temp-dir repository))
   repository)
 
 (defun c/produce-coupling-json (repository)
   "Produce coupling json needed by d3 for REPOSITORY."
   (message "Produce coupling json...")
   (shell-command
-   (format
-    "cd /tmp; python3 coupling_csv_as_edge_bundling.py --coupling %1$s-coupling.csv > /tmp/%1$s/%1$s-edgebundling.json"
-    (f-filename repository)))
+   "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json")
   repository)
-
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
   (c/copy-file "./pages/edge-bundling/script.js" (c/temp-dir repository))
   (c/copy-file "./pages/edge-bundling/style.css" (c/temp-dir repository))
-  (with-temp-file (format "/tmp/%1$s/%1$szoomable.html" (f-filename repository))
-    (insert
-     (concat
-      "<!DOCTYPE html>
-<meta charset=\"utf-8\">
-<link rel=\"stylesheet\" href=\"style.css\">
-<body>
-<script src=\"d3/d3-v4.min.js\"></script>
-"
-      (c/generate-javascript-with-repository-variable repository)
-      "
-<script src=\"script.js\"></script>"
-      )))
+  (c/copy-file "./pages/edge-bundling/zoomable.html" (c/temp-dir repository))
   repository)
 
 (defun c/show-coupling-graph-sync (repository date &optional port)
@@ -6943,14 +6930,16 @@ code can infer it automatically."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively 'c/request-date)))
-  (--> repository
-    (c/produce-git-report it nil date)
-    c/produce-code-maat-coupling-report
-    c/generate-coupling-json-script
-    c/generate-d3-v4-lib
-    c/produce-coupling-json
-    c/generate-host-edge-bundling-html
-    (c/run-server-and-navigate it port)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it nil date)
+        c/produce-code-maat-coupling-report
+        c/generate-coupling-json-script
+        c/generate-d3-v4-lib
+        c/produce-coupling-json
+        c/generate-host-edge-bundling-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-coupling-graph (repository date &optional port)
   "Show REPOSITORY edge bundling for code coupling up to DATE. Serve graph on PORT."
@@ -6963,12 +6952,14 @@ code can infer it automatically."
 ;; BEGIN find coupled files
 (defun c/get-coupling-alist-sync (repository)
   "Get list of coupled files in REPOSITORY async."
-  (--> repository
-    (c/produce-git-report it nil)
-    c/produce-code-maat-coupling-report
-    (c/get-analysis-as-string-from-csv it "coupling")
-    (c/add-filename-to-analysis-columns repository it)
-    (--map (s-split "," it) (cdr it))))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it nil)
+        c/produce-code-maat-coupling-report
+        (c/get-analysis-as-string-from-csv it "coupling")
+        (c/add-filename-to-analysis-columns repository it)
+        (--map (s-split "," it) (cdr it)))))
 
 (defun c/get-coupling-alist (repository fun)
   "FUN takes a list of coupled files in REPOSITORY."
@@ -7049,16 +7040,14 @@ code can infer it automatically."
 
 (defun c/generate-communication-json-script (repository)
   "Generate script to produce a weighted graph for REPOSITORY."
-  (c/copy-script-to-tmp "communication_csv_as_edge_bundling.py")
+  (c/copy-file "./scripts/communication_csv_as_edge_bundling.py" (c/temp-dir repository))
   repository)
 
 (defun c/produce-communication-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
   (shell-command
-   (format
-    "cd /tmp; python3 communication_csv_as_edge_bundling.py --communication %1$s-communication.csv > /tmp/%1$s/%1$s-edgebundling.json"
-    (f-filename repository)))
+   "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json")
   repository)
 
 (defun c/show-code-communication-sync (repository date &optional port)
@@ -7067,14 +7056,16 @@ code can infer it automatically."
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively 'c/request-date)))
-  (--> repository
-    (c/produce-git-report it date)
-    c/produce-code-maat-communication-report
-    c/generate-communication-json-script
-    c/generate-d3-v4-lib
-    c/produce-communication-json
-    c/generate-host-edge-bundling-html
-    (c/run-server-and-navigate it port)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it date)
+        c/produce-code-maat-communication-report
+        c/generate-communication-json-script
+        c/generate-d3-v4-lib
+        c/produce-communication-json
+        c/generate-host-edge-bundling-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-code-communication (repository date &optional port)
   "Show REPOSITORY edge bundling for code communication from DATE. Optionally define PORT on which to serve graph."
@@ -7093,20 +7084,18 @@ code can infer it automatically."
 
 (defun c/generate-knowledge-json-script (repository)
   "Generate python script."
-  (c/copy-script-to-tmp "knowledge_csv_as_enclosure_diagram.py")
+  (c/copy-file "./scripts/knowledge_csv_as_enclosure_diagram.py" (c/temp-dir repository))
   repository)
 
 (defun c/produce-knowledge-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce knowledge json...")
   (shell-command
-   (format
-    "cd /tmp; python3 knowledge_csv_as_enclosure_diagram.py --structure cloc-%1$s.csv --owners %1$s-main-dev.csv --authors /tmp/%1$s/%1$s-authors.csv > /tmp/%1$s/%1$s_knowledge.json"
-    (f-filename repository)))
+   "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json")
   repository)
 
 (defun c/insert-authors-colors-in-file (authors-colors repository)
-  (with-temp-file (format "/tmp/%1$s/%1$s-authors.csv" (f-filename repository))
+  (with-temp-file "authors.csv"
     (insert "author,color\n")
     (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
 
@@ -7247,19 +7236,7 @@ code can infer it automatically."
   "Generate host html from REPOSITORY."
   (c/copy-file "./pages/knowledge-enclosure-diagram/script.js" (c/temp-dir repository))
   (c/copy-file "./pages/knowledge-enclosure-diagram/style.css" (c/temp-dir repository))
-  (with-temp-file (format "/tmp/%1$s/%1$szoomable.html" (f-filename repository))
-    (insert
-     (concat
-      "<!DOCTYPE html>
-<meta charset=\"utf-8\">
-<link rel=\"stylesheet\" href=\"style.css\">
-<body>
-<script src=\"d3/d3.min.js\"></script>
-"
-      (c/generate-javascript-with-repository-variable repository)
-      "
-<script src=\"script.js\"></script>"
-      )))
+  (c/copy-file "./pages/knowledge-enclosure-diagram/zoomable.html" (c/temp-dir repository))
   repository)
 
 (defun c/show-knowledge-graph-sync (repository date &optional port)
@@ -7267,16 +7244,18 @@ code can infer it automatically."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively 'c/request-date)))
-  (--> repository
-    (c/produce-git-report it date)
-    c/produce-code-maat-main-dev-report
-    c/produce-cloc-report
-    c/generate-knowledge-json-script
-    c/generate-d3-lib
-    c/generate-list-authors-colors
-    c/produce-knowledge-json
-    c/generate-host-knowledge-enclosure-diagram-html
-    (c/run-server-and-navigate it port)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it date)
+        c/produce-code-maat-main-dev-report
+        c/produce-cloc-report
+        c/generate-knowledge-json-script
+        c/generate-d3-lib
+        c/generate-list-authors-colors
+        c/produce-knowledge-json
+        c/generate-host-knowledge-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-knowledge-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
