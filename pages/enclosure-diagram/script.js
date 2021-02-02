@@ -28,7 +28,7 @@ var svg = d3
     .append("g")
     .attr("transform", "translate(" + margin + "," + margin + ")");
 
-d3.json(repository.concat("_hotspot_proto.json"), function (error, root) {
+d3.json("hotspot_proto.json", function (error, root) {
     var focus = root,
         nodes = pack.nodes(root);
 

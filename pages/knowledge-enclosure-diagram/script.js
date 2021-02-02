@@ -40,7 +40,7 @@ var svg = d3
     .append("g")
     .attr("transform", "translate(" + margin + "," + margin + ")");
 
-d3.json(repository.concat("_knowledge.json"), function(error, root) {
+d3.json("knowledge.json", function(error, root) {
   var focus = root,
       nodes = pack.nodes(root);
 
@@ -113,7 +113,7 @@ var legendSVG = d3
     .style("width", "450");
 
 var size = 20
-d3.csv(repository.concat("-authors.csv"), function(authorsColors){
+d3.csv("authors.csv", function(authorsColors){
   // Add dots
   legendSVG.selectAll("mydots")
     .data(authorsColors)

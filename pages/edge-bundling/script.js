@@ -25,7 +25,7 @@ var svg = d3
 var link = svg.append("g").selectAll(".link"),
     node = svg.append("g").selectAll(".node");
 
-d3.json(repository.concat("-edgebundling.json"), function (error, classes) {
+d3.json("edgebundling.json", function (error, classes) {
     if (error) throw error;
 
     var root = packageHierarchy(classes).sum(function (d) {
