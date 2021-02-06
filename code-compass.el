@@ -7265,6 +7265,56 @@ code can infer it automatically."
   (c/async-run 'c/show-knowledge-graph-sync repository date port))
 ;; END code knowledge
 
+;; BEGIN code stability
+(defun c/produce-code-maat-age-report (repository)
+  "Create code-maat age report for REPOSITORY."
+  (c/run-code-maat "age" repository)
+  repository)
+
+(defun c/generate-age-json-script (repository)
+  "Generate python script for REPOSITORY."
+  (c/copy-file "./scripts/code_age_csv_as_enclosure_json.py" (c/temp-dir repository))
+  repository)
+
+(defun c/produce-age-json (repository)
+  "Generate REPOSITORY age json."
+  (message "Produce age json...")
+  (shell-command
+   "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json")
+  repository)
+
+(defun c/generate-host-age-enclosure-diagram-html (repository)
+  "Generate host html from REPOSITORY."
+  (c/copy-file "./pages/age-enclosure-diagram/script.js" (c/temp-dir repository))
+  (c/copy-file "./pages/age-enclosure-diagram/style.css" (c/temp-dir repository))
+  (c/copy-file "./pages/age-enclosure-diagram/zoomable.html" (c/temp-dir repository))
+  repository)
+
+(defun c/show-code-age-sync (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code stability/age up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+     (c/produce-git-report it date)
+     c/produce-code-maat-age-report
+     c/produce-cloc-report
+     c/generate-age-json-script
+     c/generate-d3-lib
+     c/produce-age-json
+     c/generate-host-age-enclosure-diagram-html
+     (c/run-server-and-navigate it port))))
+
+(defun c/show-stability-graph (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code stability up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-code-age-sync repository date port))
+;; END code stability
+
 (provide 'code-compass)
 ;;; code-compass ends here
 
