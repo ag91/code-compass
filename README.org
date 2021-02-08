@@ -203,7 +203,17 @@ https://ag91.github.io/blog/2021/02/06/-emacs-as-your-code-compass-how-stable-is
 CLOCK: [2021-02-06 Sat 16:42]
 :END:
 *** TODO word analysis
-** Contributing 
+** License
+[[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
+
+*** Dependencies
+[[https://github.com/d3/d3/][d3]]:
+
+License: [[https://opensource.org/licenses/BSD-3-Clause][BSD-3]]
+
+Copyright 2010-2020 Mike Bostock
+
+** Contributing
 :PROPERTIES:
 :CREATED:  [2020-12-11 Fri 21:40]
 :ID:       f1b0881f-1c66-49d6-ac46-aecd8dbe9e64
