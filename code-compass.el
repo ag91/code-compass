@@ -66,7 +66,7 @@
   "Browser to use to open graphs served by webserver."
   :group 'code-compass)
 
-(defconst c/path-to-code-compass (file-name-directory load-file-name))
+(defconst c/path-to-code-compass (file-name-directory load-file-name) "Path to code compass.")
 
 (defun c/subtract-to-now (n month|day &optional time)
   "Subtract N * MONTH|DAY to current time. Optionally give TIME from which to start."
@@ -644,7 +644,6 @@ code can infer it automatically."
                              "green"
                              "violet"
                              "pink"
-                             "darkyellow"
                              "brown"
                              "aquamarine"
                              "blueviolet"
@@ -687,8 +686,6 @@ code can infer it automatically."
                              "indigo"
                              "lawngreen"
                              "lightcoral"
-                             "lightcyan"
-                             "lightgoldenrodyellow"
                              "lightgray"
                              "lightgreen"
                              "lightpink"
@@ -697,7 +694,6 @@ code can infer it automatically."
                              "lightskyblue"
                              "lightslategray"
                              "lightsteelblue"
-                             "lightyellow"
                              "lime"
                              "limegreen"
                              "linen"
@@ -761,7 +757,7 @@ code can infer it automatically."
 
 (defun c/generate-list-authors-colors (repository)
   "Generate list of authors of REPOSITORY."
-  (--> (s-concat "cd " repository "; git log --format='%an' | sort | uniq")
+  (--> (s-concat "cd " repository "; git shortlog HEAD -s -n | uniq | cut -f 2")
     shell-command-to-string
     (s-split "\n" it)
     (--remove (s-blank? (s-trim it)) it)
