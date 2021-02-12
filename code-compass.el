@@ -487,16 +487,35 @@ code can infer it automatically."
 ;; END change coupling
 
 ;; BEGIN find coupled files
+(defun c/add-filename-to-analysis-columns (repository analysis)
+  "Add filepath from REPOSITORY to ANALYSIS columns."
+  (--> analysis
+    (s-split "\n" it)
+    (--remove (s-blank? (s-trim it)) it)
+    (-concat
+     (list (car it))
+     (--map
+      (--> (s-split "," it)
+        (-concat
+         (list (s-concat repository "/" (c/first it)))
+         (list
+          (if (or (null (c/second it)) (not (s-contains-p "/" (c/second it))))
+              (c/second it)
+            (s-concat repository "/" (c/second it))))
+         (cdr (cdr it)))
+        (s-join "," it))
+      (cdr it)))))
+
 (defun c/get-coupling-alist-sync (repository)
   "Get list of coupled files in REPOSITORY async."
   (c/in-temp-directory
    repository
    (--> repository
-        (c/produce-git-report it nil)
-        c/produce-code-maat-coupling-report
-        (c/get-analysis-as-string-from-csv it "coupling")
-        (c/add-filename-to-analysis-columns repository it)
-        (--map (s-split "," it) (cdr it)))))
+     (c/produce-git-report it nil)
+     c/produce-code-maat-coupling-report
+     (c/get-analysis-as-string-from-csv it "coupling")
+     (c/add-filename-to-analysis-columns repository it)
+     (--map (s-split "," it) (cdr it)))))
 
 (defun c/get-coupling-alist (repository fun)
   "FUN takes a list of coupled files in REPOSITORY."
@@ -848,8 +867,63 @@ code can infer it automatically."
   (c/async-run 'c/show-code-age-sync repository date port))
 ;; END code stability
 
+;; BEGIN code fragmentation
+(defun c/produce-code-maat-entity-ownership-report (repository)
+  "Create code-maat entity-ownership report for REPOSITORY."
+  (c/run-code-maat "entity-ownership" repository)
+  repository)
+
+(defun c/get-analysis-as-string-from-csv (repository analysis)
+  "Get ANALYSIS in csv of REPOSITORY as text."
+  (with-temp-buffer
+    (insert-file-contents-literally (s-concat analysis ".csv"))
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun c/generate-pie-script (repository)
+  "Generate python script for REPOSITORY."
+  (c/copy-file "./scripts/csv-to-pie-graph.py" (c/temp-dir repository))
+  repository)
+
+(defcustom c/pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s" "Command to visualize chart" :type 'string :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
+
+(defun c/show-pie-chart-command (file)
+  "Show pie chart of CSV FILE."
+  (format c/pie-or-bar-chart-command file))
+
+(defun c/show-fragmentation-sync (file &optional date)
+  "Show knowledge fragmentation for FILE."
+  (interactive "fShow fragmentation for:")
+  (let* ((file (file-truename file))
+         (repository (s-trim (shell-command-to-string (format "cd %s; git rev-parse --show-toplevel" (file-name-directory file))))))
+    (c/in-temp-directory
+     repository
+     (--> repository
+       (c/produce-git-report it date)
+       c/produce-code-maat-entity-ownership-report
+       c/generate-pie-script
+       (c/get-analysis-as-string-from-csv repository "entity-ownership")
+       (c/add-filename-to-analysis-columns repository it)
+       (print it)
+       (--filter (s-starts-with-p file it) it)
+       (--map
+        (--> (s-split "," it)
+          (format "%s,%s\n" (nth 1 it) (+ (string-to-number (nth 2 it)) (string-to-number (nth 3 it)))))
+        it)
+       (cons "author,+&-lines\n" it)
+       (with-temp-file "fragmentation.csv"
+         (apply 'insert it)))
+     (shell-command (c/show-pie-chart-command "fragmentation.csv")))))
+
+(defun c/show-fragmentation (file)
+  "Show knowledge fragmentation for FILE."
+  (interactive "fShow fragmentation for:")
+  (c/async-run 'c/show-fragmentation-sync file nil nil 't))
+;; END code fragmentation
+
 (provide 'code-compass)
 ;;; code-compass ends here
+
+
 
 ;; Local Variables:
 ;; time-stamp-pattern: "10/Version:\\?[ \t]+1.%02y%02m%02d\\?\n"

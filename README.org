@@ -195,13 +195,15 @@ https://ag91.github.io/blog/2021/01/28/emacs-as-your-code-compass-who-can-i-ask-
 :CREATED:  [2021-02-06 Sat 16:42]
 :END:
 https://ag91.github.io/blog/2021/02/06/-emacs-as-your-code-compass-how-stable-is-my-code/
-*** TODO fragmentation
+*** DONE fragmentation
 :PROPERTIES:
 :ID:       b72b368e-7436-4311-a0e6-97b71b8f2260
+:CREATED:  [2021-02-12 Fri 19:19]
 :END:
 :LOGBOOK:
 CLOCK: [2021-02-06 Sat 16:42]
 :END:
+https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented-is-the-knowledge-of-this-file/
 *** TODO word analysis
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
