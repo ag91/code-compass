@@ -890,11 +890,22 @@ code can infer it automatically."
   "Show pie chart of CSV FILE."
   (format c/pie-or-bar-chart-command file))
 
-(defun c/show-fragmentation-sync (file &optional date)
-  "Show knowledge fragmentation for FILE."
+(defun c/sum-by-first-column (rows)
+  (let (result)
+    (dolist (row rows)
+      (let* ((key (car row))
+             (value (cdr row))
+             (mapping (assoc key result)))
+        (if mapping
+            (setcdr mapping (+ (cdr mapping) value))
+          (push (cons key value) result))))
+    result))
+
+(defun c/show-fragmentation-sync (path &optional date)
+  "Show knowledge fragmentation for PATH."
   (interactive "fShow fragmentation for:")
-  (let* ((file (file-truename file))
-         (repository (s-trim (shell-command-to-string (format "cd %s; git rev-parse --show-toplevel" (file-name-directory file))))))
+  (let* ((path (file-truename path))
+         (repository (s-trim (shell-command-to-string (format "cd %s; git rev-parse --show-toplevel" (file-name-directory path))))))
     (c/in-temp-directory
      repository
      (--> repository
@@ -904,20 +915,24 @@ code can infer it automatically."
        (c/get-analysis-as-string-from-csv repository "entity-ownership")
        (c/add-filename-to-analysis-columns repository it)
        (print it)
-       (--filter (s-starts-with-p file it) it)
+       (--filter (s-starts-with-p path it) it)
        (--map
         (--> (s-split "," it)
-          (format "%s,%s\n" (nth 1 it) (+ (string-to-number (nth 2 it)) (string-to-number (nth 3 it)))))
+          (cons (nth 1 it) (+ (string-to-number (nth 2 it)) (string-to-number (nth 3 it)))))
+        it)
+       (c/sum-by-first-column it)
+       (--map
+        (--> it (format "%s,%s\n" (car it) (cdr it)))
         it)
        (cons "author,+&-lines\n" it)
        (with-temp-file "fragmentation.csv"
          (apply 'insert it)))
      (shell-command (c/show-pie-chart-command "fragmentation.csv")))))
 
-(defun c/show-fragmentation (file)
-  "Show knowledge fragmentation for FILE."
+(defun c/show-fragmentation (path)
+  "Show knowledge fragmentation for PATH."
   (interactive "fShow fragmentation for:")
-  (c/async-run 'c/show-fragmentation-sync file nil nil 't))
+  (c/async-run 'c/show-fragmentation-sync path nil nil 't))
 ;; END code fragmentation
 
 (provide 'code-compass)
