@@ -935,6 +935,95 @@ code can infer it automatically."
   (c/async-run 'c/show-fragmentation-sync path nil nil 't))
 ;; END code fragmentation
 
+;; BEGIN word analysis
+;; taken from: https://emacs.stackexchange.com/questions/13514/how-to-obtain-the-statistic-of-the-the-frequency-of-words-in-a-buffer
+(defvar c/punctuation-marks '(","
+                              "."
+                              "'"
+                              "&"
+                              "\"")
+  "List of Punctuation Marks that you want to count.")
+
+(defun c/count-raw-word-list (raw-word-list)
+  "Produce a dictionary of RAW-WORD-LIST with the number of occurrences for each word."
+  (--> raw-word-list
+    (--reduce-from
+     (progn
+       (incf (cdr (or (assoc it acc)
+                      (c/first (push (cons it 0) acc)))))
+       acc)
+     nil
+     it)
+    (sort it (lambda (a b) (string< (car a) (car b))))))
+
+(defun c/word-stats (string)
+  "Return word (as a token between spaces) frequency in STRING."
+  (let* ((words (split-string
+                 (downcase string)
+                 (format "[ %s\f\t\n\r\v]+"
+                         (mapconcat #'identity c/punctuation-marks ""))
+                 t))
+         (punctuation-marks (--filter
+                             (member it c/punctuation-marks)
+                             (split-string string "" t)))
+         (raw-word-list (append punctuation-marks words))
+         (word-list (c/count-raw-word-list raw-word-list)))
+    (sort word-list (lambda (a b) (> (cdr a) (cdr b))))))
+
+(defun c/word-stats-to-csv-string (string &optional order-fn)
+  "Produce occurrences csv table for words in STRING, optionally sorting the table according to ORDER-FN."
+  (--> string
+    c/word-stats
+    (--filter (> (length (car it)) 2) it)
+    (sort it (or order-fn (lambda (a b) (> (cdr a) (cdr b)))))
+    (--map (format "'%s',%d\n" (car it) (cdr it)) it)
+    (apply 's-concat it)
+    (s-concat "word,occurences\n\n" it)))
+
+(defun c/word-statistics (string &optional order-fn)
+  "Produce a buffer with word statistics from STRING, optionally define ORDER-FN (for example to see the ones appearing less first)."
+  (interactive
+   (list (buffer-substring-no-properties (point-min) (point-max))))
+  (with-current-buffer (get-buffer-create "*word-statistics*")
+    (erase-buffer)
+    (insert (c/word-stats-to-csv-string string order-fn)))
+  (pop-to-buffer "*word-statistics*")
+  (goto-char (point-min)))
+
+(defun c/word-semantics (string)
+  "Produce a buffer with the words least used, which typically contain the most semantics from STRING."
+  (interactive
+   (list (buffer-substring-no-properties (point-min) (point-max))))
+  (c/word-statistics string (lambda (a b) (< (cdr a) (cdr b)))))
+
+(defun c/word-analysis-commits (arg)
+  "Show the frequency of words used in commits messages. When ARG is set show only history for given file."
+  (interactive "P")
+  (--> (shell-command-to-string (s-concat
+                                 "git log --pretty=format:\"%s\""
+                                 (when arg (format " %s" (read-file-name "Analyze history of:")))))
+    c/word-statistics))
+
+(defun c/word-analysis-region ()
+  "Show the frequency of words in a region."
+  (interactive)
+  (when (region-active-p)
+    (--> (buffer-substring-no-properties (region-beginning) (region-end))
+      c/word-statistics)))
+
+(defun c/word-analysis-region-graph ()
+  "Show the frequency graph for words in region."
+  (interactive)
+  (when (region-active-p)
+    (--> (buffer-substring-no-properties (region-beginning) (region-end))
+      c/word-stats-to-csv-string
+      (with-temp-file "/tmp/word-stats.csv"
+        (insert it))
+      (shell-command "graph --bar --xtick-angle 90 /tmp/word-stats.csv"))))
+
+
+;; END word analysis
+
 (provide 'code-compass)
 ;;; code-compass ends here
 

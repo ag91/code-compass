@@ -204,7 +204,12 @@ https://ag91.github.io/blog/2021/02/06/-emacs-as-your-code-compass-how-stable-is
 CLOCK: [2021-02-06 Sat 16:42]
 :END:
 https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented-is-the-knowledge-of-this-file/
-*** TODO word analysis
+*** DONE word analysis
+:PROPERTIES:
+:CREATED:  [2021-02-20 Sat 19:14]
+:ID:       46dcf690-2294-47fd-bc33-e1699eba845a
+:END:
+- https://ag91.github.io/blog/2021/02/20/emacs-as-your-code-compass-what-is-this-text-about----without-me-reading-it/
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
 
