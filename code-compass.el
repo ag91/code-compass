@@ -56,17 +56,21 @@
   "A list of snapshots periods to show evolution of analyses over time."
   :group 'code-compass)
 
+(defconst c/path-to-code-compass (file-name-directory load-file-name) "Path to code compass.")
+
+(defun c/expand-file-name (file-name)
+  (expand-file-name file-name c/path-to-code-compass))
+
 (defcustom c/code-maat-command
-  "docker run -v /tmp/:/data code-maat-app"
+  (format "java -jar %s/code-maat-1-1.jar" (c/expand-file-name "dependencies"))
   "Command to run Code-maat (https://github.com/adamtornhill/code-maat). Currently defaults to use docker because easier to setup."
-  :group 'code-compass)
+  :group 'code-compass
+  :options `(,(format "java -jar %s/code-maat-1-1.jar" (c/expand-file-name "dependencies")) "docker run -v /tmp/:/data code-maat-app"))
 
 (defcustom c/preferred-browser
   "chromium"
   "Browser to use to open graphs served by webserver."
   :group 'code-compass)
-
-(defconst c/path-to-code-compass (file-name-directory load-file-name) "Path to code compass.")
 
 (defun c/subtract-to-now (n month|day &optional time)
   "Subtract N * MONTH|DAY to current time. Optionally give TIME from which to start."
@@ -137,12 +141,18 @@
 (defun c/run-code-maat (command repository)
   "Run code-maat's COMMAND on REPOSITORY."
   (message "Producing code-maat %s report for %s..." command repository)
-  (shell-command
-   (format
-    "%1$s -l /data/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
-    c/code-maat-command
-    (f-filename repository)
-    command)))
+  (let ((source-file "./dependencies/code-maat-1.0.1-standalone.jar")
+        (maat-jar-p (s-contains-p "jar" c/code-maat-command)))
+    (unless (or (not maat-jar-p) (file-exists-p (c/expand-file-name source-file)))
+      (mkdir (c/expand-file-name "dependencies") t)
+      (url-copy-file "https://github.com/smontanari/code-forensics/raw/v3.0.0/lib/analysers/code_maat/code-maat-1.0.1-standalone.jar" (c/expand-file-name source-file) t))
+    (shell-command
+     (format
+      "%1$s -l %4$s/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
+      c/code-maat-command
+      (f-filename repository)
+      command
+      (if maat-jar-p "/tmp" "/data")))))
 
 (defun c/produce-code-maat-revisions-report (repository)
   "Create code-maat revisions report for REPOSITORY."
@@ -155,9 +165,6 @@
   (shell-command
    (format "(cd %s; cloc ./ --by-file --csv --quiet) > cloc.csv" repository))
   repository)
-
-(defun c/expand-file-name (file-name)
-  (expand-file-name file-name c/path-to-code-compass))
 
 (defun c/copy-file (file-name directory)
   (copy-file (c/expand-file-name file-name) directory t))
