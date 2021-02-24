@@ -1024,6 +1024,59 @@ code can infer it automatically."
 
 ;; END word analysis
 
+;; BEGIN churn icon
+(defcustom c/icon-trends
+  '(:period "3"
+            :always-additions (propertize "⬆" 'face `(:background "DarkOrange"))
+            :always-deletions (propertize "⬇" 'face `(:background "SpringGreen"))
+            :more-additions   (propertize "↗" 'face `(:background "Gold"))
+            :more-deletions   (propertize "↘" 'face `(:background "GreenYellow")))
+  "Icon and period of evaluation for trend.")
+
+(defun c/calculate-added-delete-lines (file n-weeks-ago)
+  "Calculate added and deleted lines for FILE from N-WEEKS-AGO."
+  (--> "git log --since \"%s weeks ago\" --numstat --oneline %s "
+    (format it n-weeks-ago file)
+    (shell-command-to-string it)
+    (s-split "\n" it)
+    (--map (s-split "\t" it) it)
+    (--filter (> (length it) 2) it)
+    (--reduce-from
+     (list
+      :additions (+ (string-to-number (nth 0 it)) (plist-get acc :additions))
+      :deletions (+ (string-to-number (nth 1 it)) (plist-get acc :deletions)))
+     (list :additions 0 :deletions 0)
+     it)))
+
+(defcustom c/display-icon 't "Display an icon in modeline showing growth trend of code. A pointing up icon means the code has been growing, a pointing down arrow has been decreasing.")
+
+(defun c/display-icon ()
+  "Display icon for buffer according to the previous history."
+  (when (and c/display-icon (vc-root-dir))
+    (let* ((additions-deletions
+            (c/calculate-added-delete-lines (buffer-file-name) (plist-get c/icon-trends :period)))
+
+           (additions (plist-get additions-deletions :additions))
+           (deletions (plist-get additions-deletions :deletions))
+           (icon-key (cond
+                      ((eq deletions 0) :always-additions)
+                      ((eq additions 0) :always-deletions)
+                      ((> additions deletions) :more-additions)
+                      ('otherwise :more-deletions)))
+           (icon (plist-get c/icon-trends icon-key)))
+      (c/remove-icon)
+      (setq-local mode-line-format (cons  `(:eval ,(plist-get c/icon-trends icon-key)) mode-line-format)))))
+
+(defun c/remove-icon ()
+  "Remove icon."
+  (setq-local mode-line-format (--remove (-contains-p (--remove (symbolp it) c/icon-trends) (plist-get it :eval)) mode-line-format)))
+
+(defun c/display-icon-delayed ()
+  "Display icon function for `prog-mode-hook'."
+  (run-with-timer 0.1 nil 'c/display-icon))
+
+(add-hook 'prog-mode-hook 'c/display-icon-delayed)
+;; END churn icon
 (provide 'code-compass)
 ;;; code-compass ends here
 
