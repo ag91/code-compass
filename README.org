@@ -29,10 +29,11 @@ mind of his author Adam Tornhill. His books are inspiring and a
 This project depends on the following external dependencies:
 
 - Git
-- Python
-- Docker
+- Python 3
+- Java 8 or above
 - code-maat
-- gnuplot/graph-cli
+- graph-cli
+- cloc
 
 And the following Emacs packages:
 
@@ -60,13 +61,14 @@ care of the Emacs installation:
 For Docker, the Code Maat image, cloc and graph-cli run the following script:
 
 #+begin_src sh :noeval
+# Docker is only necessary if you want to use that instead of the (automatically downloaded) JAR file
 # see here for how to install in systems different from Linux Debian: https://gist.github.com/rstacruz/297fc799f094f55d062b982f7dac9e41
-sudo apt install docker.io;
-sudo systemctl start docker;
+#sudo apt install docker.io;
+#sudo systemctl start docker;
 # after you manage to run docker successfully
-git clone https://github.com/adamtornhill/code-maat.git;
-cd code-maat;
-docker build -t code-maat-app .
+#git clone https://github.com/adamtornhill/code-maat.git;
+#cd code-maat;
+#docker build -t code-maat-app .
 
 sudo apt install cloc;
 
@@ -210,6 +212,12 @@ https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented
 :ID:       46dcf690-2294-47fd-bc33-e1699eba845a
 :END:
 - https://ag91.github.io/blog/2021/02/20/emacs-as-your-code-compass-what-is-this-text-about----without-me-reading-it/
+*** TODO file-churn icon
+:PROPERTIES:
+:CREATED:  [2021-02-24 Wed 21:47]
+:ID:       c4809753-ff55-4726-81d7-e1caa37b60cd
+:END:
+
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
 

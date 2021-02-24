@@ -3,8 +3,8 @@
 ;; Copyright (C) 2020 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
-;; Version: 0.0.3
-;; Package-Version: 20210101
+;; Version: 0.1.0
+;; Package-Version: 20210224
 ;; Keywords: emacs, sofware, analysis
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -59,6 +59,7 @@
 (defconst c/path-to-code-compass (file-name-directory load-file-name) "Path to code compass.")
 
 (defun c/expand-file-name (file-name)
+  "Expand FILE-NAME with `c/path-to-code-compass'."
   (expand-file-name file-name c/path-to-code-compass))
 
 (defcustom c/code-maat-command
