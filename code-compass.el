@@ -143,8 +143,7 @@
   "Run code-maat's COMMAND on REPOSITORY."
   (message "Producing code-maat %s report for %s..." command repository)
   (let ((source-file "./dependencies/code-maat-1.0.1-standalone.jar")
-        (maat-jar-p (s-contains-p "jar" c/code
-                                  -maat-command)))
+        (maat-jar-p (s-contains-p "jar" c/code-maat-command)))
     (unless (or (not maat-jar-p) (file-exists-p (c/expand-file-name source-file)))
       (mkdir (c/expand-file-name "dependencies") t)
       (url-copy-file "https://github.com/smontanari/code-forensics/raw/v3.0.0/lib/analysers/code_maat/code-maat-1.0.1-standalone.jar" (c/expand-file-name source-file) t))
