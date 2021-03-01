@@ -530,7 +530,7 @@ code can infer it automatically."
   (async-start
    `(lambda ()
       (setq load-path ',load-path)
-      (load-file "~/.emacs.d/lisp/dot-code-maat.el")
+      (load-file ,(symbol-file 'c/get-coupling-alist))
       (c/get-coupling-alist-sync ,repository))
    fun))
 
