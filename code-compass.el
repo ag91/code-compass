@@ -1085,6 +1085,22 @@ code can infer it automatically."
 
 (add-hook 'prog-mode-hook 'c/display-icon-delayed)
 ;; END churn icon
+;; BEGIN wrapper gource
+(defcustom c/gource-command
+  "gource"
+  "Command to the gource utility. See https://gource.io/ for more information on how to install."
+  :type 'string)
+
+(defun c/show-gource (repository date)
+  "Open gource for REPOSITORY from DATE."
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)))
+  (if (executable-find c/gource-command)
+      (async-shell-command (format "cd %s; %s --start-date %s -seconds-per-day 0.5" repository c/gource-command date))
+    (message (format "Sorry, cannot find executable (%s). Try change the value of `c/gource-command'" c/gource-command))))
+;; END wrapper gource
 (provide 'code-compass)
 ;;; code-compass ends here
 

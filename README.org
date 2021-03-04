@@ -26,6 +26,10 @@ mind of his author Adam Tornhill. His books are inspiring and a
 :ID:       6d691473-a522-46cf-ae41-09fd5c2c69df
 :END:
 
+Note: I label dependencies as *optional* when the commands needing the
+dependency warn you they cannot execute because the dependency is
+missing.
+
 This project depends on the following external dependencies:
 
 - Git
@@ -34,6 +38,7 @@ This project depends on the following external dependencies:
 - code-maat
 - graph-cli
 - cloc
+- gource (optional)
 
 And the following Emacs packages:
 
@@ -217,7 +222,11 @@ https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented
 :CREATED:  [2021-02-24 Wed 21:47]
 :ID:       c4809753-ff55-4726-81d7-e1caa37b60cd
 :END:
-
+*** TODO integrate gource
+:PROPERTIES:
+:CREATED:  [2021-03-04 Thu 10:34]
+:ID:       63b080a9-859b-4863-af5f-2d6eed8bd215
+:END:
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
 
