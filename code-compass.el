@@ -1056,7 +1056,11 @@ code can infer it automatically."
      (list :additions 0 :deletions 0)
      it)))
 
-(defcustom c/display-icon 't "Display an icon in modeline showing growth trend of code. A pointing up icon means the code has been growing, a pointing down arrow has been decreasing.")
+(defcustom c/display-icon
+  't
+  "Display an icon in modeline showing growth trend of code.
+   A pointing up icon means the code has been growing,
+   a pointing down arrow has been decreasing.")
 
 (defun c/display-icon ()
   "Display icon for buffer according to the previous history."
@@ -1077,7 +1081,13 @@ code can infer it automatically."
 
 (defun c/remove-icon ()
   "Remove icon."
-  (setq-local mode-line-format (--remove (-contains-p (--remove (symbolp it) c/icon-trends) (plist-get it :eval)) mode-line-format)))
+  (setq-local
+   mode-line-format
+   (--remove
+    (-contains-p
+     (--remove (symbolp it) c/icon-trends)
+     (plist-get it :eval))
+    mode-line-format)))
 
 (defun c/display-icon-delayed ()
   "Display icon function for `prog-mode-hook'."
@@ -1098,7 +1108,10 @@ code can infer it automatically."
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively 'c/request-date)))
   (if (executable-find c/gource-command)
-      (async-shell-command (format "cd %s; %s --start-date %s -seconds-per-day 0.5" repository c/gource-command date))
+      (async-shell-command
+       (s-concat
+        (format "cd %s; %s -seconds-per-day 0.5" repository c/gource-command)
+        (when date (formate " --start-date %s" date))))
     (message (format "Sorry, cannot find executable (%s). Try change the value of `c/gource-command'" c/gource-command))))
 ;; END wrapper gource
 (provide 'code-compass)
