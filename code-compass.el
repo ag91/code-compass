@@ -1114,6 +1114,57 @@ code can infer it automatically."
         (when date (formate " --start-date %s" date))))
     (message (format "Sorry, cannot find executable (%s). Try change the value of `c/gource-command'" c/gource-command))))
 ;; END wrapper gource
+
+
+;; BEGIN create todos for a coupled files
+(defun c/get-matching-coupled-files (files &optional file)
+  "Get coupled FILES that match FILE or current buffer's file."
+  (let ((coupled-file (file-truename (or file (buffer-file-name)))))
+    (--> files
+      (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
+      (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+      (-map (lambda (file)
+              (when (or (string= coupled-file (file-truename (car file)))
+                        (string= coupled-file (file-truename (nth 1 file))))
+                (car
+                 (--remove (string= (buffer-file-name) it) (-take 2 file)))))
+            it)
+      (-remove 'null it))))
+
+(defun c/show-todo-buffer (files file)
+  "Show a `org-mode' buffer for FILE with the left FILES to modify."
+  (switch-to-buffer (get-buffer-create (concat (file-name-base file) "-todos")))
+  (erase-buffer)
+  (org-mode)
+  (insert (concat "* Files you need to modify after " (file-name-base file) ":\n"))
+  (let* ((modified-files (--filter
+                          (-contains-p
+                           (s-split "\n" (shell-command-to-string "git diff --name-only HEAD"))
+                           (file-name-nondirectory it))
+                          files))
+         (files-to-modify (-difference files modified-files)))
+    (--each files-to-modify
+      (insert (format "** TODO [[%s][%s]]\n" it (file-name-base it))))
+    (--each modified-files
+      (insert (format "** DONE [[%s][%s]]\n" it (file-name-base it))))))
+
+(defun c/create-todos-from-coupled-files (&optional file)
+  "Allow user to choose a coupled file to FILE or the current buffer's file."
+  (interactive)
+  (let ((create-todos
+         (lambda (files file)
+           (--> (c/get-matching-coupled-files files file)
+             (if (null it)
+                 (message "Nothing left todo for this file in this commit!")
+               (c/show-todo-buffer it file))))))
+    (c/get-coupled-files-alist
+     (vc-root-dir)
+     `(lambda (files)
+        (funcall
+         ,create-todos
+         files
+         ,(or file (file-truename (or file (buffer-file-name)))))))))
+;; END create todos for a coupled files
 (provide 'code-compass)
 ;;; code-compass ends here
 
