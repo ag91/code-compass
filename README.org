@@ -195,13 +195,13 @@ CLOCK: [2021-01-12 Tue 22:16]
 :LOGBOOK:
 CLOCK: [2021-01-22 Fri 20:32]
 :END:
-https://ag91.github.io/blog/2021/01/28/emacs-as-your-code-compass-who-can-i-ask-for-help/
+- https://ag91.github.io/blog/2021/01/28/emacs-as-your-code-compass-who-can-i-ask-for-help/
 *** DONE code stability
 :PROPERTIES:
 :ID:       fca4bd0a-8c67-4482-8692-a32f98ea2438
 :CREATED:  [2021-02-06 Sat 16:42]
 :END:
-https://ag91.github.io/blog/2021/02/06/-emacs-as-your-code-compass-how-stable-is-my-code/
+- https://ag91.github.io/blog/2021/02/06/-emacs-as-your-code-compass-how-stable-is-my-code/
 *** DONE fragmentation
 :PROPERTIES:
 :ID:       b72b368e-7436-4311-a0e6-97b71b8f2260
@@ -217,6 +217,12 @@ https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented
 :ID:       46dcf690-2294-47fd-bc33-e1699eba845a
 :END:
 - https://ag91.github.io/blog/2021/02/20/emacs-as-your-code-compass-what-is-this-text-about----without-me-reading-it/
+*** TODO use case of coupling: generate todos for current file
+:PROPERTIES:
+:CREATED:  [2021-03-05 Fri 00:17]
+:ID:       a5e1f2f8-3836-4092-bbc7-2943aa2ff186
+:END:
+- https://ag91.github.io/blog/2021/03/04/emacs-as-your-code-compass-what-files-do-i-need-to-change-next/
 *** TODO file-churn icon
 :PROPERTIES:
 :CREATED:  [2021-02-24 Wed 21:47]
