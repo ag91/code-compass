@@ -1062,22 +1062,37 @@ code can infer it automatically."
    A pointing up icon means the code has been growing,
    a pointing down arrow has been decreasing.")
 
+(defun c/async-start (start-func &optional finish-func)
+  "Call `async-start' with START-FUNC and FINISH-FUNC."
+  (async-start
+   `(lambda ()
+      (setq load-path ',load-path)
+      (load-file ,(symbol-file 'c/async-start))
+      (funcall ,start-func))
+   finish-func))
+
 (defun c/display-icon ()
   "Display icon for buffer according to the previous history."
   (when (and c/display-icon (vc-root-dir))
-    (let* ((additions-deletions
-            (c/calculate-added-delete-lines (buffer-file-name) (plist-get c/icon-trends :period)))
+    (let ((current-buffer (current-buffer))
+          (current-file (buffer-file-name)))
+      (c/async-start
+       `(lambda ()
+          (let* ((additions-deletions
+                  (c/calculate-added-delete-lines ,current-file (plist-get ',c/icon-trends :period)))
 
-           (additions (plist-get additions-deletions :additions))
-           (deletions (plist-get additions-deletions :deletions))
-           (icon-key (cond
-                      ((eq deletions 0) :always-additions)
-                      ((eq additions 0) :always-deletions)
-                      ((> additions deletions) :more-additions)
-                      ('otherwise :more-deletions)))
-           (icon (plist-get c/icon-trends icon-key)))
-      (c/remove-icon)
-      (setq-local mode-line-format (cons  `(:eval ,(plist-get c/icon-trends icon-key)) mode-line-format)))))
+                 (additions (plist-get additions-deletions :additions))
+                 (deletions (plist-get additions-deletions :deletions))
+                 (icon-key (cond
+                            ((eq deletions 0) :always-additions)
+                            ((eq additions 0) :always-deletions)
+                            ((> additions deletions) :more-additions)
+                            ('otherwise :more-deletions))))
+            (plist-get ',c/icon-trends icon-key)))
+       `(lambda (icon)
+          (with-current-buffer ,current-buffer
+            (c/remove-icon)
+            (setq-local mode-line-format (cons `(:eval ,icon) mode-line-format))))))))
 
 (defun c/remove-icon ()
   "Remove icon."
