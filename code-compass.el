@@ -1084,8 +1084,8 @@ code can infer it automatically."
                  (additions (plist-get additions-deletions :additions))
                  (deletions (plist-get additions-deletions :deletions))
                  (icon-key (cond
-                            ((eq deletions 0) :always-additions)
                             ((eq additions 0) :always-deletions)
+                            ((eq deletions 0) :always-additions)
                             ((> additions deletions) :more-additions)
                             ('otherwise :more-deletions))))
             (plist-get ',c/icon-trends icon-key)))
