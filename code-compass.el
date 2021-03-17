@@ -599,7 +599,6 @@ code can infer it automatically."
   (--> (vc-root-dir)
     (let ((root it))
       (c/get-coupled-files-alist it (buffer-file-name) (lambda (files file) (c/show-coupled-files files file)))
-      (when (f-file-p root) (find-file root))
       )
     ))
 ;; END find coupled files
