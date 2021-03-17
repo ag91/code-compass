@@ -542,19 +542,20 @@ code can infer it automatically."
   (make-hash-table :test 'equal)
   "Hash table to contain coupling files list.")
 
-(defun c/get-coupled-files-alist (repository fun)
+(defun c/get-coupled-files-alist (repository file-name fun)
   "Run FUN on the coupled files for REPOSITORY."
   (let* ((key (funcall c/calculate-coupling-project-key-fn repository))
          (c/files (gethash key c/coupling-project-map)))
     (if c/files
-        (funcall fun c/files)
+        (funcall fun c/files file-name)
       (progn
         (message "Building coupling cache asynchronously...")
         (c/get-coupling-alist
          repository
          `(lambda (result-files)
+            (message "Coupling Cache Built")
             (puthash ,key result-files c/coupling-project-map)
-            (funcall ,fun result-files)))))))
+            (funcall ,fun result-files ,file-name)))))))
 
 (defun c/clear-coupling-project-map ()
   "Clear `c/coupling-project-hash'."
@@ -567,33 +568,39 @@ code can infer it automatically."
     (when git-root
       (c/get-coupled-files-alist
        git-root
-       `(lambda (x)
+       (buffer-file-name)
+       `(lambda (x file-name)
           (message
            "Finished to update coupled files for %s and found %s coupled files."
            ,git-root
            (length x)))))))
 
+(defun c/show-coupled-files (files file-name)
+  (--> files
+    (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
+    (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+    (-map (lambda (file)
+            (when (or (string= (file-truename file-name) (file-truename (car file)))
+                      (string= (file-truename file-name) (file-truename (nth 1 file))))
+              (car
+               (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file)))))
+          it)
+    (-remove 'null it)
+    (if (null it)
+        (message "No coupled file found!")
+      (let ((open-file (completing-read "Find coupled file: " it nil 't)))
+        (find-file open-file)
+        )))
+  )
+
 (defun c/find-coupled-files ()
   "Allow user to choose files coupled according to previous changes."
   (interactive)
-  (let ((choose-file
-         (lambda (files)
-           (--> files
-             (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
-             (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
-             (-map (lambda (file)
-                     (when (or (string= (file-truename (buffer-file-name)) (file-truename (car file)))
-                               (string= (file-truename (buffer-file-name)) (file-truename (nth 1 file))))
-                       (car
-                        (--remove (string= (file-truename (buffer-file-name)) (file-truename it)) (-take 2 file)))))
-                   it)
-             (-remove 'null it)
-             (if (null it)
-                 (message "No coupled file found!")
-               (completing-read "Find coupled file: " it nil 't))))))
-    (--> (vc-root-dir)
-      (c/get-coupled-files-alist it choose-file)
-      (when (f-file-p it) (find-file it)))))
+  (--> (vc-root-dir)
+    (let ((root it))
+      (c/get-coupled-files-alist it (buffer-file-name) (lambda (files file) (c/show-coupled-files files file)))
+      )
+    ))
 ;; END find coupled files
 
 ;; BEGIN code communication
