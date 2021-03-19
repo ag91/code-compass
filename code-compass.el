@@ -542,12 +542,12 @@ code can infer it automatically."
   (make-hash-table :test 'equal)
   "Hash table to contain coupling files list.")
 
-(defun c/get-coupled-files-alist (repository file-name fun)
+(defun c/get-coupled-files-alist (repository fun)
   "Run FUN on the coupled files for REPOSITORY."
   (let* ((key (funcall c/calculate-coupling-project-key-fn repository))
          (c/files (gethash key c/coupling-project-map)))
     (if c/files
-        (funcall fun c/files file-name)
+        (funcall fun c/files)
       (progn
         (message "Building coupling cache asynchronously...")
         (c/get-coupling-alist
@@ -555,7 +555,7 @@ code can infer it automatically."
          `(lambda (result-files)
             (message "Coupling Cache Built")
             (puthash ,key result-files c/coupling-project-map)
-            (funcall ,fun result-files ,file-name)))))))
+            (funcall ,fun result-files)))))))
 
 (defun c/clear-coupling-project-map ()
   "Clear `c/coupling-project-hash'."
@@ -568,8 +568,7 @@ code can infer it automatically."
     (when git-root
       (c/get-coupled-files-alist
        git-root
-       (buffer-file-name)
-       `(lambda (x file-name)
+       `(lambda (x)
           (message
            "Finished to update coupled files for %s and found %s coupled files."
            ,git-root
@@ -596,11 +595,9 @@ code can infer it automatically."
 (defun c/find-coupled-files ()
   "Allow user to choose files coupled according to previous changes."
   (interactive)
-  (--> (vc-root-dir)
-    (let ((root it))
-      (c/get-coupled-files-alist it (buffer-file-name) (lambda (files file) (c/show-coupled-files files file)))
-      )
-    ))
+  (c/get-coupled-files-alist
+   (vc-root-dir)
+   `(lambda (files) (c/show-coupled-files files ,(buffer-file-name)))))
 ;; END find coupled files
 
 ;; BEGIN code communication
