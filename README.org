@@ -217,22 +217,24 @@ https://ag91.github.io/blog/2021/02/11/emacs-as-your-code-compass-how-fragmented
 :ID:       46dcf690-2294-47fd-bc33-e1699eba845a
 :END:
 - https://ag91.github.io/blog/2021/02/20/emacs-as-your-code-compass-what-is-this-text-about----without-me-reading-it/
-*** TODO use case of coupling: generate todos for current file
+*** DONE use case of coupling: generate todos for current file
 :PROPERTIES:
 :CREATED:  [2021-03-05 Fri 00:17]
 :ID:       a5e1f2f8-3836-4092-bbc7-2943aa2ff186
 :END:
 - https://ag91.github.io/blog/2021/03/04/emacs-as-your-code-compass-what-files-do-i-need-to-change-next/
+*** DONE integrate gource
+:PROPERTIES:
+:CREATED:  [2021-03-04 Thu 10:34]
+:ID:       63b080a9-859b-4863-af5f-2d6eed8bd215
+:END:
+https://ag91.github.io/blog/2021/03/19/emacs-as-your-code-compass-watch-history-with-gource/
 *** TODO file-churn icon
 :PROPERTIES:
 :CREATED:  [2021-02-24 Wed 21:47]
 :ID:       c4809753-ff55-4726-81d7-e1caa37b60cd
 :END:
-*** TODO integrate gource
-:PROPERTIES:
-:CREATED:  [2021-03-04 Thu 10:34]
-:ID:       63b080a9-859b-4863-af5f-2d6eed8bd215
-:END:
+
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
 
@@ -264,7 +266,7 @@ it! Thanks for caring.
 - [[https://github.com/textarcana/code-risk/tree/master/bin][code-risk]]: this is a set of scripts Noah Sussman's uses to find
   quality issues in repositories. Code-compass includes these and make
   them easily accessible to you.
-- [[https://github.com/smontanari/code-forensics][code-forensics]]: this makes available code-maat analyses in a node
+p- [[https://github.com/smontanari/code-forensics][code-forensics]]: this makes available code-maat analyses in a node
   application. Code-compass offers a subset of these for now and
   focuses more on supporting you while you edit your project. (Thanks
   @BlankSpruce to share this repository!)

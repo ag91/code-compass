@@ -1123,6 +1123,12 @@ code can infer it automatically."
   "Command to the gource utility. See https://gource.io/ for more information on how to install."
   :type 'string)
 
+(defcustom c/gource-seconds-per-day
+  0.5
+  "How long each Git history day should take."
+  :type 'float)
+
+
 (defun c/show-gource (repository date)
   "Open gource for REPOSITORY from DATE."
   (interactive
@@ -1132,7 +1138,7 @@ code can infer it automatically."
   (if (executable-find c/gource-command)
       (async-shell-command
        (s-concat
-        (format "cd %s; %s -seconds-per-day 0.5" repository c/gource-command)
+        (format "cd %s; %s -seconds-per-day %s" repository c/gource-command c/gource-seconds-per-day)
         (when date (formate " --start-date %s" date))))
     (message (format "Sorry, cannot find executable (%s). Try change the value of `c/gource-command'" c/gource-command))))
 ;; END wrapper gource
