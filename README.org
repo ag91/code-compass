@@ -26,6 +26,8 @@ mind of his author Adam Tornhill. His books are inspiring and a
 :ID:       6d691473-a522-46cf-ae41-09fd5c2c69df
 :END:
 
+*Please run =c/doctor= if you encounter errors in running this tool*
+
 Note: I label dependencies as *optional* when the commands needing the
 dependency warn you they cannot execute because the dependency is
 missing.
@@ -36,8 +38,8 @@ This project depends on the following external dependencies:
 - Python 3
 - Java 8 or above
 - code-maat
-- graph-cli
 - cloc
+- graph-cli (optional - only few commands will not succeed)
 - gource (optional)
 
 And the following Emacs packages:

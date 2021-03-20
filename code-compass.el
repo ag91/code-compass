@@ -73,6 +73,31 @@
   "Browser to use to open graphs served by webserver."
   :group 'code-compass)
 
+(defun c/doctor ()
+  "Report if and what dependencies are missing."
+  (interactive)
+  (let ((git-p (executable-find "git"))
+        (python-p (executable-find "python3"))
+        (java-p (executable-find "java"))
+        (graph-cli-p (executable-find "graph"))
+        (cloc-p (executable-find "cloc"))
+        (gource-p (executable-find "gource"))
+        (doctor-buffer (get-buffer-create "code-compass dependencies check")))
+    (with-current-buffer doctor-buffer
+      (read-only-mode -1)
+      (erase-buffer)
+      (insert "Welcome to Code Compass doctor!\n\n")
+      (insert "Required dependencies for minimal functionality:\n")
+      (insert (format "- Git: %s\n" (if git-p "OK" "MISSING")))
+      (insert (format "- Python: %s\n" (if python-p "OK" "MISSING")))
+      (insert (format "- Java: %s\n" (if java-p "OK" "MISSING")))
+      (insert (format "- Cloc: %s\n" (if cloc-p "OK" "MISSING")))
+      (insert "\n\nOptional dependencies:\n")
+      (insert (format "- Graph-cli: %s\n" (if graph-cli-p "OK" "MISSING")))
+      (insert (format "- Gource: %s\n" (if gource-p "OK" "MISSING")))
+      (read-only-mode))
+    (switch-to-buffer-other-window doctor-buffer)))
+
 (defun c/subtract-to-now (n month|day &optional time)
   "Subtract N * MONTH|DAY to current time. Optionally give TIME from which to start."
   (time-subtract
