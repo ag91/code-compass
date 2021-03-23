@@ -1215,6 +1215,44 @@ code can infer it automatically."
          files
          ,(or file (file-truename (or file (buffer-file-name)))))))))
 ;; END create todos for a coupled files
+
+;; BEGIN EXPERIMENTAL slack support
+(defun c/get-main-contributor-email (&optional file)
+  "Find email of main contributor of buffer, or FILE."
+  (--> (or file (buffer-file-name))
+    (file-name-nondirectory it)
+    (s-concat "./" it)
+    (format "git shortlog HEAD -n -sne -- %s" it)
+    (shell-command-to-string it)
+    (s-split "\n" it)
+    car ;; only the first contributor
+    (s-split "<" it)
+    (nth 1 it)
+    (s-split ">" it)
+    (nth 0 it)))
+
+(defun c/open-slack-from-email (email)
+  "Open slack chat from EMAIL."
+  (slack-buffer-display-im
+   (slack-create-user-profile-buffer
+    slack-current-team
+    (plist-get ;; TODO fall back to manual choice if the mail cannot be found?
+     (--find
+      (string=
+       email
+       (plist-get (plist-get it :profile) :email))
+      (slack-team-users slack-current-team))
+     :id))))
+
+(defun c/slack-main-contributor ()
+  "Open slack chat with main contributor of file."
+  (interactive)
+  (if slack-current-team
+      (c/open-slack-from-email (c/get-main-contributor-email))
+    (message "Sorry, setup your emacs-slack to use this function. See https://github.com/yuya373/emacs-slack.")))
+
+;; END EXPERIMENTAL slack support
+
 (provide 'code-compass)
 ;;; code-compass ends here
 
