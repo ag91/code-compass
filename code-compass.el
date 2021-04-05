@@ -267,7 +267,7 @@
    `(lambda (result)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,c/preferred-browser))
-        (when (not ,do-not-serve) (c/run-server-and-navigate (if (eq ',command 'c/show-hotspot-cluster-sync) "system" ,repository) (or ,port 8888)))))))
+        (when (not ,do-not-serve) (c/run-server-and-navigate  ,(expand-file-name repository) (or ,port 8888)))))))
 
 (defun c/show-hotspots-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots starting at DATE, optionally served at PORT."
@@ -278,14 +278,14 @@
   (c/in-temp-directory
    repository
    (--> repository
-        (c/produce-git-report it date)
-        c/produce-code-maat-revisions-report
-        c/produce-cloc-report
-        c/generate-merger-script
-        c/generate-d3-v3-lib
-        c/produce-json
-        c/generate-host-enclosure-diagram-html
-        (c/run-server-and-navigate it port))))
+     (c/produce-git-report it date)
+     c/produce-code-maat-revisions-report
+     c/produce-cloc-report
+     c/generate-merger-script
+     c/generate-d3-v3-lib
+     c/produce-json
+     c/generate-host-enclosure-diagram-html
+     (c/run-server-and-navigate it port))))
 
 (defun c/show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
@@ -1252,6 +1252,103 @@ code can infer it automatically."
     (message "Sorry, setup your emacs-slack to use this function. See https://github.com/yuya373/emacs-slack.")))
 
 ;; END EXPERIMENTAL slack support
+
+;; BEGIN Hotspots for microservices
+(defun c/get-repositories-from-file (file)
+  "Extract the list of directories on which to run `c/show-hotspot-cluster-sync' from FILE."
+  (when (file-exists-p file)
+    (with-temp-buffer
+      (insert-file-contents-literally file)
+      (--> (buffer-substring-no-properties (point-min) (point-max))
+        (s-split "\n" it)
+        (--map (s-concat (file-name-directory file) "/" it) it)
+        (--filter
+         (and
+          (f-directory-p it)
+          (f-directory-p (concat it "/.git")))
+         it)))))
+
+(defun c/directory-git-p (directory)
+  "Check if DIRECTORY is a Git repository."
+  (and
+   (f-directory-p directory)
+   (f-directory-p (concat directory "/.git"))))
+
+(defun c/add-prepended-reports (directory)
+  "Prepend DIRECTORY to gitreport and revisions."
+  (copy-file "gitreport.log" (format "%s-gitreport.log" (f-filename directory)) 't)
+  (copy-file "revisions.csv" (format "%s-revisions.csv" (f-filename directory)) 't)
+  directory)
+
+(defun c/show-hotspot-cluster-sync (repository date &optional port)
+  "Show hotspot analysis for the repositories in DIRECTORY starting it from DATE.
+If a file `repos-cluster.txt' exists with a list of repositories in the current repository, this has priority over DIRECTORY."
+  (interactive
+   (list
+    (read-directory-name "Choose repositories directory:" ".")
+    (call-interactively 'c/request-date)))
+  (let* ((filepath (s-concat repository "/repos-cluster.txt"))
+         (directories
+          (or (c/get-repositories-from-file filepath)
+              (-filter
+               #'c/directory-git-p
+               (--remove
+                (or (s-ends-with? "/." it) (s-ends-with? "/.." it))
+                (directory-files repository 't)))))
+         (no-prefix-revisions-fn
+          (lambda (repo)
+            (c/produce-code-maat-revisions-report repository)
+            repo)))
+    (message "Used directories: %s" directories)
+    (c/in-temp-directory
+     repository
+     (c/produce-cloc-report repository)
+     (--each directories
+       (--> it
+         (c/produce-git-report it date)
+         (funcall no-prefix-revisions-fn it)
+         c/add-prepended-reports
+         ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
+         (let* ((filename (f-filename it))
+                (rev-file (s-concat filename "-revisions.csv")))
+           (--> rev-file
+             (with-temp-buffer
+               (insert-file-contents-literally it)
+               (buffer-substring-no-properties (point-min) (point-max)))
+             (s-split "\n" it 'omit-nulls)
+             cdr
+             (--map (concat filename "/" it) it)
+             (s-join "\n" it)
+             (format "%s\n" it)
+             (write-region it nil rev-file)))))
+     (c/in-temp-directory
+      repository
+      ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
+      (shell-command "cat *-revisions.csv | sed '/^[[:space:]]*$/d' > revisions.csv;")
+      (write-region
+       (concat
+        "entity,n-revs\n"
+        (with-temp-buffer
+          (insert-file-contents-literally "revisions.csv")
+          (buffer-substring-no-properties (point-min) (point-max))))
+       nil
+       "revisions.csv")
+      (--> repository
+        c/generate-merger-script
+        c/generate-d3-v3-lib
+        c/produce-json
+        c/generate-host-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))))
+
+(defun c/show-hotspot-cluster (directory date &optional port)
+  "Show DIRECTORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
+  (interactive
+   (list
+    (read-directory-name "Choose repositories directory:" ".")
+    (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-hotspot-cluster-sync directory date port))
+
+;; END Hotspots for microservices
 
 (provide 'code-compass)
 ;;; code-compass ends here

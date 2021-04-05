@@ -145,8 +145,11 @@ Releasing this in the wild is exciting, but it will take some time.
 Here what you can expect.
 
 *** DONE install instructions and dependencies
+:PROPERTIES:
+:ID:       27174a0f-186d-4963-a5b3-4704d680476f
+:END:
 - https://ag91.github.io/blog/2020/12/11/emacsconf2020-first-steps-towards-emacs-becoming-your-code-compass/
-*** TODO hotspots
+*** DONE hotspots
 :PROPERTIES:
 :CREATED:  [2020-12-18 Fri 18:01]
 :ID:       00f4d809-e7e0-4f29-a2af-30fa07a080e7
@@ -156,7 +159,7 @@ CLOCK: [2020-12-18 Fri 18:01]--[2020-12-18 Fri 18:01] =>  0:00
 :END:
 - hotspots analysis: https://ag91.github.io/blog/2020/12/18/emacs-as-your-code-compass-finding-code-hotspots/
 - hotspots evolution: https://ag91.github.io/blog/2020/12/24/emacs-as-your-code-compass-looking-at-hotspots-evolution/
-- hotspots analysis for microservices: TODO
+- hotspots analysis for microservices: https://ag91.github.io/blog/2021/04/08/emacs-as-your-code-compass-find-hotspots-in-micro-services/
 *** DONE software complexity
 :PROPERTIES:
 :ID:       6847956b-75c1-4ad7-b911-1994a21a26ac
