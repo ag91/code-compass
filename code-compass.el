@@ -34,6 +34,7 @@
 ;; See documentation on https://github.com/ag91/code-compass
 
 ;;; Code:
+(require 'dash)
 (require 'f)
 (require 's)
 (require 'simple-httpd)
@@ -107,7 +108,7 @@
 (defun c/request-date (days|months &optional time)
   "Request date in days or months by asking how many DAYS|MONTHS ago. Optionally give TIME from which to start."
   (interactive
-   (list (completing-read "From how long ago?" c/default-periods)))
+   (list (completing-read "From how long ago? " c/default-periods)))
   (when (not (string= days|months "beginning"))
     (format-time-string
      "%Y-%m-%d"
