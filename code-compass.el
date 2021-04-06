@@ -74,6 +74,11 @@
   "Browser to use to open graphs served by webserver."
   :group 'code-compass)
 
+(defcustom c/exclude-directories
+  '("node_modules" "bower_components" "vendor" "tmp")
+  "A list of directory patterns to exclude from reports. Contents are passed to the cloc executable via its --exclude-dir argument."
+  :group 'code-compass)
+
 (defun c/doctor ()
   "Report if and what dependencies are missing."
   (interactive)
@@ -187,10 +192,10 @@
   repository)
 
 (defun c/produce-cloc-report (repository)
-  "Create cloc report for REPOSITORY."
+  "Create cloc report for REPOSITORY. To filter specific subdirectories out of this report, edit the variable `c/exclude-directories'."
   (message "Producing cloc report...")
   (shell-command
-   (format "(cd %s; cloc ./ --by-file --csv --quiet) > cloc.csv" repository))
+   (format "(cd %s; cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ",")))
   repository)
 
 (defun c/copy-file (file-name directory)
