@@ -149,9 +149,9 @@
 (defmacro c/in-temp-directory (repository &rest body)
   "Executes BODY in temporary directory created for analysed REPOSITORY."
   `(progn
-     (mkdir (c/temp-dir repository) t)
+     (mkdir (c/temp-dir ,repository) t)
      (c/in-directory
-      (c/temp-dir repository)
+      (c/temp-dir ,repository)
       ,@body)))
 
 (defun c/produce-git-report (repository date &optional before-date)
@@ -244,7 +244,6 @@
   "Navigate to served directory for REPOSITORY, optionally at specified PORT."
   (let ((port (or port 8888)))
     (browse-url (format "http://localhost:%s/zoomable.html" port)))
-  (sleep-for 1)
   repository)
 
 (defun c/run-server (repository &optional port)
@@ -367,14 +366,15 @@
       (used-indentation . ,(c/second complexities-indentation)))))
 
 (defun c/calculate-complexity-stats (code &optional opts)
-  "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation."
-  (--> code
-    ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
-    c/split-on-newlines
-    c/remove-empty-lines
-    c/remove-text-after-indentation
-    (c/as-logical-indents it opts)
-    c/stats-from))
+  "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation. Return `nil' for empty CODE."
+  (ignore-errors
+    (--> code
+      ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
+      c/split-on-newlines
+      c/remove-empty-lines
+      c/remove-text-after-indentation
+      (c/as-logical-indents it opts)
+      c/stats-from)))
 
 (defun c/calculate-complexity-current-buffer (&optional indentation)
   "Calculate complexity of the current buffer contents.
@@ -529,8 +529,8 @@ code can infer it automatically."
 (defun c/add-filename-to-analysis-columns (repository analysis)
   "Add filepath from REPOSITORY to ANALYSIS columns."
   (--> analysis
-    (s-split "\n" it)
-    (--remove (s-blank? (s-trim it)) it)
+    (s-split "\n" it 't)
+                                        ;(--remove (s-blank? (s-trim it)) it)
     (-concat
      (list (car it))
      (--map
