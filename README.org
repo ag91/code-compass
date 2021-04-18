@@ -241,7 +241,12 @@ https://ag91.github.io/blog/2021/03/19/emacs-as-your-code-compass-watch-history-
 :ID:       c4809753-ff55-4726-81d7-e1caa37b60cd
 :END:
 - https://ag91.github.io/blog/2021/03/26/emacs-as-your-code-compass-a-gentle-trigger-for-maintenance/
-
+*** DONE main contributors notification
+:PROPERTIES:
+:ID:       da34e784-028f-4d04-81ec-baa267c9c668
+:END:
+- https://ag91.github.io/blog/2021/04/18/emacs-as-your-code-compass-quietly-show-who-can-help/
+*** TODO functions complexity
 
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]

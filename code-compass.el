@@ -3,8 +3,8 @@
 ;; Copyright (C) 2020 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
-;; Version: 0.1.0
-;; Package-Version: 20210224
+;; Version: 0.1.1
+;; Package-Version: 20210418
 ;; Keywords: emacs, sofware, analysis
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1355,6 +1355,31 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
   (c/async-run 'c/show-hotspot-cluster-sync directory date port))
 
 ;; END Hotspots for microservices
+
+;; BEGIN display contributors
+(defcustom c/slack-main-contributor 't
+  "Enable the listing of contributors for a file in the *Messages* buffer.")
+
+(defun c/contributors-list-for-current-buffer ()
+  "Return contributors of this file if it is in a git repository."
+  (when (vc-root-dir)
+    (shell-command-to-string
+     (concat
+      "git shortlog HEAD -n -s -- "
+      (buffer-name)))))
+
+(defun c/display-contributors ()
+  "Show in minibuffer the main contributors of this file."
+  (interactive)
+  (when c/slack-main-contributor
+    (message "Contributors of %s:\n%s" (buffer-file-name) (c/contributors-list-for-current-buffer))))
+
+(defun c/display-contributors-delayed ()
+  "Delayed version of `c/display-contributors` for use in hooks (for example `prog-mode-hook')."
+  (run-with-timer 0.1 nil 'c/display-contributors))
+
+(add-hook 'prog-mode-hook #'c/display-contributors-delayed)
+;; END display contributors
 
 (provide 'code-compass)
 ;;; code-compass ends here
