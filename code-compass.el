@@ -1167,7 +1167,7 @@ code can infer it automatically."
       (async-shell-command
        (s-concat
         (format "cd %s; %s -seconds-per-day %s" repository c/gource-command c/gource-seconds-per-day)
-        (when date (formate " --start-date %s" date))))
+        (when date (format " --start-date %s" date))))
     (message (format "Sorry, cannot find executable (%s). Try change the value of `c/gource-command'" c/gource-command))))
 ;; END wrapper gource
 
