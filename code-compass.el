@@ -1366,7 +1366,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
     (shell-command-to-string
      (concat
       "git shortlog HEAD -n -s -- "
-      (buffer-name)))))
+      (buffer-file-name)))))
 
 (defun c/display-contributors ()
   "Show in minibuffer the main contributors of this file."
