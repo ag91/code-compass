@@ -49,7 +49,7 @@
 
 (defcustom c/default-periods
   '("beginning" "1d" "2d" "3d" "6d" "12d" "18d" "24d" "1m" "2m" "6m")
-  "A list of choices for starting date for reducing the Git log for analysis. 'beginning' is a keyword to say to not reduce.'Nd' means to start after N days, where N is a positive number. 'Nm' means to start after N months, where N is a positive number."
+  "A list of choices for starting date to reducing the Git log for analysis. 'beginning' is a keyword to say to not reduce.'Nd' means to start after N days, where N is a positive number. 'Nm' means to start after N months, where N is a positive number."
   :group 'code-compass)
 
 (defcustom c/snapshot-periods
@@ -1189,20 +1189,22 @@ code can infer it automatically."
 
 (defun c/show-todo-buffer (files file)
   "Show a `org-mode' buffer for FILE with the left FILES to modify."
-  (switch-to-buffer (get-buffer-create (concat (file-name-base file) "-todos")))
-  (erase-buffer)
-  (org-mode)
-  (insert (concat "* Files you need to modify after " (file-name-base file) ":\n"))
-  (let* ((modified-files (--filter
-                          (-contains-p
-                           (s-split "\n" (shell-command-to-string "git diff --name-only HEAD"))
-                           (file-name-nondirectory it))
-                          files))
-         (files-to-modify (-difference files modified-files)))
-    (--each files-to-modify
-      (insert (format "** TODO [[%s][%s]]\n" it (file-name-base it))))
-    (--each modified-files
-      (insert (format "** DONE [[%s][%s]]\n" it (file-name-base it))))))
+  (let ((buffer (get-buffer-create (concat (file-name-base file) "-todos"))))
+    (switch-to-buffer buffer)
+    (erase-buffer)
+    (org-mode)
+    (insert (concat "* Files you need to modify after " (file-name-base file) ":\n"))
+    (let* ((modified-files (--filter
+                            (-contains-p
+                             (s-split "\n" (shell-command-to-string "git diff --name-only HEAD"))
+                             (file-name-nondirectory it))
+                            files))
+           (files-to-modify (-difference files modified-files)))
+      (--each files-to-modify
+        (insert (format "** TODO [[%s][%s]]\n" it (file-name-base it))))
+      (--each modified-files
+        (insert (format "** DONE [[%s][%s]]\n" it (file-name-base it)))))
+    buffer))
 
 (defun c/create-todos-from-coupled-files (&optional file)
   "Allow user to choose a coupled file to FILE or the current buffer's file."
