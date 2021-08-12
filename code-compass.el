@@ -428,8 +428,8 @@ code can infer it automatically."
 
 (defun c/plot-csv-file-with-graph-cli (file)
   "Plot CSV FILE with graph-cli."
-  (shell-command
-   (format "graph %s" file)))
+  (async-shell-command
+   (format "graph --xtick-angle 90 %s" file)))
 
 (defun c/plot-lines-with-graph-cli (data)
   "Plot DATA from lists as a graph."
