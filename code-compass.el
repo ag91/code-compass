@@ -1373,7 +1373,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 (defun c/display-contributors ()
   "Show in minibuffer the main contributors of this file."
   (interactive)
-  (when c/slack-main-contributor
+  (when (and c/slack-main-contributor (buffer-file-name))
     (message "Contributors of %s:\n%s" (buffer-file-name) (c/contributors-list-for-current-buffer))))
 
 (defun c/display-contributors-delayed ()

@@ -279,7 +279,7 @@ it! Thanks for caring.
 - [[https://github.com/textarcana/code-risk/tree/master/bin][code-risk]]: this is a set of scripts Noah Sussman's uses to find
   quality issues in repositories. Code-compass includes these and make
   them easily accessible to you.
-p- [[https://github.com/smontanari/code-forensics][code-forensics]]: this makes available code-maat analyses in a node
+- [[https://github.com/smontanari/code-forensics][code-forensics]]: this makes available code-maat analyses in a node
   application. Code-compass offers a subset of these for now and
   focuses more on supporting you while you edit your project. (Thanks
   @BlankSpruce to share this repository!)
