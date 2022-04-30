@@ -1383,6 +1383,54 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 (add-hook 'prog-mode-hook #'c/display-contributors-delayed)
 ;; END display contributors
 
+(defun c/cheatsheet ()
+  "Show cheatsheet for code compass."
+  (interactive)
+  (switch-to-buffer (get-buffer-create "*Code Compass Help*"))
+  (org-mode)
+  (insert "
+      | Command                               | Description                                                     |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/doctor                              | Check dependencies are satisfied.                               |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | Graphs                                |                                                                 |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/show-hotspots                       | Show code that changed more frequently in the last period.      |
+      | c/show-hotspot-snapshot-sync          | Show hotspots over many intervals of times.                     |
+      | c/show-hotspot-cluster                | Show hotspots graph for a directory containing many projects.   |
+      | c/show-code-churn                     | Show code throughput/churn in the last period.                  |
+      | c/show-coupling-graph                 | Show which file is coupled to which in the last period.         |
+      | c/show-code-communication             | Show which contributors are/should likely chat with each other. |
+      | c/show-knowledge-graph                | Show who knows most about what code.                            |
+      | c/show-stability-graph                | Show the code that is most stable in last period.               |
+      | c/show-fragmentation                  | Show pie chart with how much people contributed to file.        |
+      | c/show-gource                         | Show gource video of repository contributions.                  |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | Complexity                            |                                                                 |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/calculate-complexity-current-buffer | Prints complexity stats of current buffer.                      |
+      | c/show-complexity-over-commits        | Show line graph of complexity for current file from the start.  |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | Word analysis                         |                                                                 |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/word-statistics                     | Show stats about words in buffer.                               |
+      | c/word-semantics                      | Show words least used in buffer.                                |
+      | c/word-analysis-commits               | Show frequency of words in commit messages.                     |
+      | c/word-analysis-region                | Show frequency of words in region (useful on functions)         |
+      | c/word-analysis-region-graph          | Show graph for words frequency in region.                       |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | Coupling extras                       |                                                                 |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/create-todos-from-coupled-files     | Make TODO list from coupled files.                              |
+      | c/find-coupled-files                  | Jump to a file coupled to the current one, if available.        |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | Contributors extras                   |                                                                 |
+      |---------------------------------------+-----------------------------------------------------------------|
+      | c/slack-main-contributor              | Chat with main contributor of file via emacs-slack.             |
+      | c/display-contributors                | Show contributors for current file in minibuffer.               |
+
+"))
+
 (provide 'code-compass)
 ;;; code-compass ends here
 

@@ -20,6 +20,15 @@ A significant part of this project relies on [[https://github.com/adamtornhill/c
 mind of his author Adam Tornhill. His books are inspiring and a
 [[https://pragprog.com/titles/atcrime/your-code-as-a-crime-scene/][suggested]] [[https://pragprog.com/titles/atevol/software-design-x-rays/][read]]. 
 
+** Features
+:PROPERTIES:
+:CREATED:  [2022-04-30 Sat 21:53]
+:ID:       9c50d648-8562-497e-93d4-088db1a326a8
+:END:
+
+Use =c/cheatsheet= to have a quick reference of the available commands and their aim.
+Check the =Release Checklist= heading for more information about them.
+
 ** Installation and Dependencies
 :PROPERTIES:
 :CREATED:  [2020-12-11 Fri 19:10]
