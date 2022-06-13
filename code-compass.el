@@ -139,12 +139,9 @@
 
 (defmacro c/in-directory (directory &rest body)
   "Executes BODY in DIRECTORY by temporarily changing current buffer's default directory to DIRECTORY."
-  `(let ((current-dir default-directory))
+  `(let ((default-directory ,directory))
      (unwind-protect
-         (progn
-           (cd ,directory)
-           ,@body)
-       (cd current-dir))))
+         ,@body)))
 
 (defmacro c/in-temp-directory (repository &rest body)
   "Executes BODY in temporary directory created for analysed REPOSITORY."
@@ -1430,6 +1427,20 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
       | c/display-contributors                | Show contributors for current file in minibuffer.               |
 
 "))
+
+(defun c/show-raw-csv (analysis repository date)
+  "Show REPOSITORY edge bundling synchronously for code coupling up to DATE. Serve graph on PORT."
+  (interactive (list
+                (completing-read "Analysis:"
+                                 '("authors" "revisions" "coupling" "soc" "summary" "identity" "abs-churn" "author-churn" "entity-churn" "entity-ownership" "main-dev" "refactoring-main-dev" "entity-effort" "main-dev-by-revs" "fragmentation" "communication" "messages" "age"))
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it nil date)
+        (c/run-code-maat analysis it)
+        (find-file (concat "./" analysis ".csv")))))
 
 (provide 'code-compass)
 ;;; code-compass ends here
