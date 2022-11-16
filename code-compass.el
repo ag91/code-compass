@@ -1425,6 +1425,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
       |---------------------------------------+-----------------------------------------------------------------|
       | c/slack-main-contributor              | Chat with main contributor of file via emacs-slack.             |
       | c/display-contributors                | Show contributors for current file in minibuffer.               |
+      | c/show-raw-csv                        | Show the raw csv file for code-maat analyses.                   |
 
 "))
 
