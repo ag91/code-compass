@@ -1441,7 +1441,13 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
    (--> repository
         (c/produce-git-report it nil date)
         (c/run-code-maat analysis it)
-        (find-file (concat "./" analysis ".csv")))))
+        (find-file (concat "./" analysis ".csv")))
+   (when (progn (goto-char (point-min))
+                (search-forward "entity," nil t))
+     (while (search-forward-regexp "\\\n." nil t)
+       (goto-char (- (point) 1))
+       (insert (concat repository)))
+     (goto-char (point-min)))))
 
 (provide 'code-compass)
 ;;; code-compass ends here
