@@ -255,8 +255,19 @@ https://ag91.github.io/blog/2021/03/19/emacs-as-your-code-compass-watch-history-
 :ID:       da34e784-028f-4d04-81ec-baa267c9c668
 :END:
 - https://ag91.github.io/blog/2021/04/18/emacs-as-your-code-compass-quietly-show-who-can-help/
-*** TODO functions complexity
-
+*** DONE code refactoring
+:PROPERTIES:
+:ID:       c0c383ca-c5a1-4c65-be7d-853dce78ac23
+:END:
+https://ag91.github.io/blog/2022/11/23/emacs-as-your-code-compass-who-is-the-person-who-refactored-most-in-this-project/
+:PROPERTIES:
+:CREATED:  [2022-11-23 Wed 23:42]
+:END:
+*** DONE functions complexity
+:PROPERTIES:
+:CREATED:  [2022-11-23 Wed 23:42]
+:END:
+oh well I needed tree-sitter for this, see here: https://github.com/ag91/moldable-emacs/blob/master/molds/contrib.el#L242
 ** License
 [[https://www.gnu.org/licenses/gpl-3.0.html][GPLv3]]
 
