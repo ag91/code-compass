@@ -857,6 +857,50 @@ code can infer it automatically."
   (c/async-run 'c/show-knowledge-graph-sync repository date port))
 ;; END code knowledge
 
+;; BEGIN code refactoring
+(defun c/produce-code-maat-refactoring-main-dev-report (repository)
+  "Create code-maat refactoring-main-dev report for REPOSITORY."
+  (c/run-code-maat "refactoring-main-dev" repository)
+  repository)
+
+(defun c/generate-refactoring-json-script (repository)
+  "Generate python script."
+  (c/copy-file "./scripts/refactoring_csv_as_enclosure_diagram.py" (c/temp-dir repository))
+  repository)
+
+(defun c/produce-refactoring-json (repository)
+  "Generate REPOSITORY age json."
+  (message "Produce refactoring json...")
+  (shell-command
+   "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json") ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
+  repository)
+
+(defun c/show-refactoring-graph-sync (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/in-temp-directory
+   repository
+   (--> repository
+        (c/produce-git-report it date)
+        c/produce-code-maat-refactoring-main-dev-report
+        c/produce-cloc-report
+        c/generate-refactoring-json-script ;; added,total-added, vs removed,total-removed
+        c/generate-d3-v3-lib
+        c/generate-list-authors-colors
+        c/produce-refactoring-json
+        c/generate-host-knowledge-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))
+
+(defun c/show-refactoring-graph (repository date &optional port)
+  "Show REPOSITORY enclosure diagram for code refactoring up to DATE. Optionally define PORT on which to serve graph."
+  (interactive (list
+                (read-directory-name "Choose git repository directory:" (vc-root-dir))
+                (call-interactively 'c/request-date)))
+  (c/async-run 'c/show-refactoring-graph-sync repository date port))
+;; END code refactoring
+
 ;; BEGIN code stability
 (defun c/produce-code-maat-age-report (repository)
   "Create code-maat age report for REPOSITORY."
@@ -1399,6 +1443,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
       | c/show-coupling-graph                 | Show which file is coupled to which in the last period.         |
       | c/show-code-communication             | Show which contributors are/should likely chat with each other. |
       | c/show-knowledge-graph                | Show who knows most about what code.                            |
+      | c/show-refactoring-graph              | Show who refactored most what code.                             |
       | c/show-stability-graph                | Show the code that is most stable in last period.               |
       | c/show-fragmentation                  | Show pie chart with how much people contributed to file.        |
       | c/show-gource                         | Show gource video of repository contributions.                  |
