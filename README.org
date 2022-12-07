@@ -91,7 +91,7 @@ sudo apt install cloc;
 cd /tmp;
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; # from here https://pip.pypa.io/en/stable/installing/
 python get-pip.py --user
-pip3 install --user graph-cli
+pip3 install --user graph-cli # https://github.com/mcastorina/graph-cli
 #+end_src
 
 For trying things out in a clean Emacs:
