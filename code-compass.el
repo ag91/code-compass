@@ -79,6 +79,158 @@
   "A list of directory patterns to exclude from reports. Contents are passed to the cloc executable via its --exclude-dir argument."
   :group 'code-compass)
 
+(defcustom c/calculate-coupling-project-key-fn
+  'identity
+  "Function taking a REPOSITORY path and returning a string.")
+
+(defcustom c/authors-colors (list
+                             "red"
+                             "blue"
+                             "orange"
+                             "gray"
+                             "green"
+                             "violet"
+                             "pink"
+                             "brown"
+                             "aquamarine"
+                             "blueviolet"
+                             "burlywood"
+                             "cadetblue"
+                             "chartreuse"
+                             "chocolate"
+                             "coral"
+                             "cornflowerblue"
+                             "cyan"
+                             "darkblue"
+                             "darkcyan"
+                             "darkgoldenrod"
+                             "darkgray"
+                             "darkgreen"
+                             "darkkhaki"
+                             "darkmagenta"
+                             "darkolivegreen"
+                             "darkorange"
+                             "darkorchid"
+                             "darkred"
+                             "darksalmon"
+                             "darkseagreen"
+                             "darkslateblue"
+                             "darkslategray"
+                             "darkturquoise"
+                             "darkviolet"
+                             "deeppink"
+                             "deepskyblue"
+                             "dimgray"
+                             "dodgerblue"
+                             "firebrick"
+                             "forestgreen"
+                             "fuchsia"
+                             "gold"
+                             "goldenrod"
+                             "greenyellow"
+                             "hotpink"
+                             "indianred"
+                             "indigo"
+                             "lawngreen"
+                             "lightcoral"
+                             "lightgray"
+                             "lightgreen"
+                             "lightpink"
+                             "lightsalmon"
+                             "lightseagreen"
+                             "lightskyblue"
+                             "lightslategray"
+                             "lightsteelblue"
+                             "lime"
+                             "limegreen"
+                             "linen"
+                             "magenta"
+                             "maroon"
+                             "mediumaquamarine"
+                             "mediumblue"
+                             "mediumorchid"
+                             "mediumpurple"
+                             "mediumseagreen"
+                             "mediumslateblue"
+                             "mediumspringgreen"
+                             "mediumturquoise"
+                             "mediumvioletred"
+                             "midnightblue"
+                             "mintcream"
+                             "mistyrose"
+                             "moccasin"
+                             "navajowhite"
+                             "navy"
+                             "oldlace"
+                             "olive"
+                             "olivedrab"
+                             "orangered"
+                             "orchid"
+                             "palegoldenrod"
+                             "palegreen"
+                             "paleturquoise"
+                             "palevioletred"
+                             "papayawhip"
+                             "peachpuff"
+                             "peru"
+                             "plum"
+                             "powderblue"
+                             "purple"
+                             "rosybrown"
+                             "royalblue"
+                             "saddlebrown"
+                             "salmon"
+                             "sandybrown"
+                             "seagreen"
+                             "seashell"
+                             "sienna"
+                             "silver"
+                             "skyblue"
+                             "slateblue"
+                             "slategray"
+                             "snow"
+                             "springgreen"
+                             "steelblue"
+                             "tan"
+                             "teal"
+                             "thistle"
+                             "tomato"
+                             "turquoise"
+                             "wheat"
+                             "whitesmoke"
+                             "yellow"
+                             "yellowgreen")
+  "Colors to use for authors.")
+
+(defcustom c/pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s" "Command to visualize chart" :type 'string :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
+
+(defcustom c/gource-command
+  "gource"
+  "Command to the gource utility. See https://gource.io/ for more information on how to install."
+  :type 'string)
+
+(defcustom c/gource-seconds-per-day
+  0.5
+  "How long each Git history day should take."
+  :type 'float)
+
+(defcustom c/display-icon
+  't
+  "Display an icon in modeline showing growth trend of code.
+   A pointing up icon means the code has been growing,
+   a pointing down arrow has been decreasing.")
+
+(defcustom c/icon-trends
+  '(:period "3"
+            :always-additions (propertize "⬆" 'face `(:background "DarkOrange"))
+            :always-deletions (propertize "⬇" 'face `(:background "SpringGreen"))
+            :more-additions   (propertize "↗" 'face `(:background "Gold"))
+            :more-deletions   (propertize "↘" 'face `(:background "GreenYellow")))
+  "Icon and period of evaluation for trend.")
+
+(defcustom c/slack-main-contributor 't
+  "Enable the listing of contributors for a file in the *Messages* buffer.")
+
 (defun c/doctor ()
   "Report if and what dependencies are missing."
   (interactive)
@@ -263,6 +415,14 @@
    `(lambda ()
       (setq load-path ',load-path)
       (load-file ,(symbol-file command))
+      (setq c/code-maat-command ,c/code-maat-command)
+      (setq c/pie-or-bar-chart-command ,c/pie-or-bar-chart-command)
+      (setq c/calculate-coupling-project-key-fn ',c/calculate-coupling-project-key-fn)
+      (setq c/authors-colors ',c/authors-colors)
+      (setq c/exclude-directories ',c/exclude-directories)
+      (setq c/preferred-browser ,c/preferred-browser)
+      (setq c/snapshot-periods ',c/snapshot-periods)
+      (setq c/default-periods ',c/default-periods)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,c/preferred-browser))
         (funcall ',command ,repository ,date)))
@@ -562,9 +722,6 @@ code can infer it automatically."
       (c/get-coupling-alist-sync ,repository))
    fun))
 
-(defcustom c/calculate-coupling-project-key-fn
-  'identity
-  "Function taking a REPOSITORY path and returning a string.")
 
 (defvar c/coupling-project-map
   (make-hash-table :test 'equal)
@@ -695,133 +852,14 @@ code can infer it automatically."
     (insert "author,color\n")
     (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
 
-(defcustom c/authors-colors (list
-                             "red"
-                             "blue"
-                             "orange"
-                             "gray"
-                             "green"
-                             "violet"
-                             "pink"
-                             "brown"
-                             "aquamarine"
-                             "blueviolet"
-                             "burlywood"
-                             "cadetblue"
-                             "chartreuse"
-                             "chocolate"
-                             "coral"
-                             "cornflowerblue"
-                             "cyan"
-                             "darkblue"
-                             "darkcyan"
-                             "darkgoldenrod"
-                             "darkgray"
-                             "darkgreen"
-                             "darkkhaki"
-                             "darkmagenta"
-                             "darkolivegreen"
-                             "darkorange"
-                             "darkorchid"
-                             "darkred"
-                             "darksalmon"
-                             "darkseagreen"
-                             "darkslateblue"
-                             "darkslategray"
-                             "darkturquoise"
-                             "darkviolet"
-                             "deeppink"
-                             "deepskyblue"
-                             "dimgray"
-                             "dodgerblue"
-                             "firebrick"
-                             "forestgreen"
-                             "fuchsia"
-                             "gold"
-                             "goldenrod"
-                             "greenyellow"
-                             "hotpink"
-                             "indianred"
-                             "indigo"
-                             "lawngreen"
-                             "lightcoral"
-                             "lightgray"
-                             "lightgreen"
-                             "lightpink"
-                             "lightsalmon"
-                             "lightseagreen"
-                             "lightskyblue"
-                             "lightslategray"
-                             "lightsteelblue"
-                             "lime"
-                             "limegreen"
-                             "linen"
-                             "magenta"
-                             "maroon"
-                             "mediumaquamarine"
-                             "mediumblue"
-                             "mediumorchid"
-                             "mediumpurple"
-                             "mediumseagreen"
-                             "mediumslateblue"
-                             "mediumspringgreen"
-                             "mediumturquoise"
-                             "mediumvioletred"
-                             "midnightblue"
-                             "mintcream"
-                             "mistyrose"
-                             "moccasin"
-                             "navajowhite"
-                             "navy"
-                             "oldlace"
-                             "olive"
-                             "olivedrab"
-                             "orangered"
-                             "orchid"
-                             "palegoldenrod"
-                             "palegreen"
-                             "paleturquoise"
-                             "palevioletred"
-                             "papayawhip"
-                             "peachpuff"
-                             "peru"
-                             "plum"
-                             "powderblue"
-                             "purple"
-                             "rosybrown"
-                             "royalblue"
-                             "saddlebrown"
-                             "salmon"
-                             "sandybrown"
-                             "seagreen"
-                             "seashell"
-                             "sienna"
-                             "silver"
-                             "skyblue"
-                             "slateblue"
-                             "slategray"
-                             "snow"
-                             "springgreen"
-                             "steelblue"
-                             "tan"
-                             "teal"
-                             "thistle"
-                             "tomato"
-                             "turquoise"
-                             "wheat"
-                             "whitesmoke"
-                             "yellow"
-                             "yellowgreen")
-  "Colors to use for authors.")
-
 (defun c/generate-list-authors-colors (repository)
   "Generate list of authors of REPOSITORY."
   (--> (s-concat "cd " repository "; git shortlog HEAD -s -n | uniq | cut -f 2")
-    shell-command-to-string
-    (s-split "\n" it)
-    (--remove (s-blank? (s-trim it)) it)
-    (-zip it c/authors-colors)
-    (c/insert-authors-colors-in-file it repository))
+       shell-command-to-string
+       (s-split "\n" it)
+       (--remove (s-blank? (s-trim it)) it)
+       (-zip it c/authors-colors)
+       (c/insert-authors-colors-in-file it repository))
   repository)
 
 (defun c/generate-host-knowledge-enclosure-diagram-html (repository)
@@ -968,8 +1006,6 @@ code can infer it automatically."
   (c/copy-file "./scripts/csv-to-pie-graph.py" (c/temp-dir repository))
   repository)
 
-(defcustom c/pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s" "Command to visualize chart" :type 'string :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
-
 (defun c/show-pie-chart-command (file)
   "Show pie chart of CSV FILE."
   (format c/pie-or-bar-chart-command file))
@@ -1100,43 +1136,30 @@ code can infer it automatically."
   (interactive)
   (when (region-active-p)
     (--> (buffer-substring-no-properties (region-beginning) (region-end))
-      c/word-stats-to-csv-string
-      (with-temp-file "/tmp/word-stats.csv"
-        (insert it))
-      (shell-command "graph --bar --xtick-angle 90 /tmp/word-stats.csv"))))
+         c/word-stats-to-csv-string
+         (with-temp-file "/tmp/word-stats.csv"
+           (insert it))
+         (shell-command "graph --bar --xtick-angle 90 /tmp/word-stats.csv"))))
 
 
 ;; END word analysis
 
 ;; BEGIN churn icon
-(defcustom c/icon-trends
-  '(:period "3"
-            :always-additions (propertize "⬆" 'face `(:background "DarkOrange"))
-            :always-deletions (propertize "⬇" 'face `(:background "SpringGreen"))
-            :more-additions   (propertize "↗" 'face `(:background "Gold"))
-            :more-deletions   (propertize "↘" 'face `(:background "GreenYellow")))
-  "Icon and period of evaluation for trend.")
 
 (defun c/calculate-added-delete-lines (file n-weeks-ago)
   "Calculate added and deleted lines for FILE from N-WEEKS-AGO."
   (--> "git log --since \"%s weeks ago\" --numstat --oneline %s "
-    (format it n-weeks-ago file)
-    (shell-command-to-string it)
-    (s-split "\n" it)
-    (--map (s-split "\t" it) it)
-    (--filter (> (length it) 2) it)
-    (--reduce-from
-     (list
-      :additions (+ (string-to-number (nth 0 it)) (plist-get acc :additions))
-      :deletions (+ (string-to-number (nth 1 it)) (plist-get acc :deletions)))
-     (list :additions 0 :deletions 0)
-     it)))
-
-(defcustom c/display-icon
-  't
-  "Display an icon in modeline showing growth trend of code.
-   A pointing up icon means the code has been growing,
-   a pointing down arrow has been decreasing.")
+       (format it n-weeks-ago file)
+       (shell-command-to-string it)
+       (s-split "\n" it)
+       (--map (s-split "\t" it) it)
+       (--filter (> (length it) 2) it)
+       (--reduce-from
+        (list
+         :additions (+ (string-to-number (nth 0 it)) (plist-get acc :additions))
+         :deletions (+ (string-to-number (nth 1 it)) (plist-get acc :deletions)))
+        (list :additions 0 :deletions 0)
+        it)))
 
 (defun c/async-start (start-func &optional finish-func)
   "Call `async-start' with START-FUNC and FINISH-FUNC."
@@ -1187,16 +1210,6 @@ code can infer it automatically."
 (add-hook 'prog-mode-hook 'c/display-icon-delayed)
 ;; END churn icon
 ;; BEGIN wrapper gource
-(defcustom c/gource-command
-  "gource"
-  "Command to the gource utility. See https://gource.io/ for more information on how to install."
-  :type 'string)
-
-(defcustom c/gource-seconds-per-day
-  0.5
-  "How long each Git history day should take."
-  :type 'float)
-
 
 (defun c/show-gource (repository date)
   "Open gource for REPOSITORY from DATE."
@@ -1400,8 +1413,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 ;; END Hotspots for microservices
 
 ;; BEGIN display contributors
-(defcustom c/slack-main-contributor 't
-  "Enable the listing of contributors for a file in the *Messages* buffer.")
+
 
 (defun c/contributors-list-for-current-buffer ()
   "Return contributors of this file if it is in a git repository."
