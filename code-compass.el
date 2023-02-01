@@ -356,12 +356,14 @@
    (format "(cd %s; cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ",")))
   repository)
 
-(defun c/copy-file (file-name directory)
-  (copy-file (c/expand-file-name file-name) directory t))
+(defun c/copy-file (file-name directory &optional set-executable?)
+  (copy-file (c/expand-file-name file-name) directory t)
+  (when set-executable?
+    (set-file-modes (concat directory "/" (file-name-nondirectory file-name)) (file-modes-symbolic-to-number "u=rwx,go=rx"))))
 
 (defun c/generate-merger-script (repository)
   "Generate a Python script to give weights to the circle diagram of REPOSITORY."
-  (c/copy-file "./scripts/csv_as_enclosure_json.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/csv_as_enclosure_json.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/generate-d3-v3-lib (repository)
@@ -653,7 +655,7 @@ code can infer it automatically."
 
 (defun c/generate-coupling-json-script (repository)
   "Generate script to produce a weighted graph for REPOSITORY."
-  (c/copy-file "./scripts/coupling_csv_as_edge_bundling.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/coupling_csv_as_edge_bundling.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/produce-coupling-json (repository)
@@ -805,7 +807,7 @@ code can infer it automatically."
 
 (defun c/generate-communication-json-script (repository)
   "Generate script to produce a weighted graph for REPOSITORY."
-  (c/copy-file "./scripts/communication_csv_as_edge_bundling.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/communication_csv_as_edge_bundling.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/produce-communication-json (repository)
@@ -849,7 +851,7 @@ code can infer it automatically."
 
 (defun c/generate-knowledge-json-script (repository)
   "Generate python script."
-  (c/copy-file "./scripts/knowledge_csv_as_enclosure_diagram.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/knowledge_csv_as_enclosure_diagram.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/produce-knowledge-json (repository)
@@ -915,7 +917,7 @@ code can infer it automatically."
 
 (defun c/generate-refactoring-json-script (repository)
   "Generate python script."
-  (c/copy-file "./scripts/refactoring_csv_as_enclosure_diagram.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/refactoring_csv_as_enclosure_diagram.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/produce-refactoring-json (repository)
@@ -959,7 +961,7 @@ code can infer it automatically."
 
 (defun c/generate-age-json-script (repository)
   "Generate python script for REPOSITORY."
-  (c/copy-file "./scripts/code_age_csv_as_enclosure_json.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/code_age_csv_as_enclosure_json.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/produce-age-json (repository)
@@ -1015,7 +1017,7 @@ code can infer it automatically."
 
 (defun c/generate-pie-script (repository)
   "Generate python script for REPOSITORY."
-  (c/copy-file "./scripts/csv-to-pie-graph.py" (c/temp-dir repository))
+  (c/copy-file "./scripts/csv-to-pie-graph.py" (c/temp-dir repository) t)
   repository)
 
 (defun c/show-pie-chart-command (file)
