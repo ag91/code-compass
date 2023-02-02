@@ -331,8 +331,8 @@
   "Run code-maat's COMMAND on REPOSITORY."
   (message "Producing code-maat %s report for %s..." command repository)
   (let ((source-file (format "%s/code-maat-1.0.1-standalone.jar" c/download-directory))
-        (docker-command-p (s-contains-p "docker" c/code-maat-command)))
-    (unless (or (not docker-command-p) (file-exists-p (c/expand-file-name source-file)))
+        (maat-jar-p (s-contains-p "jar" c/code-maat-command)))
+    (when (and maat-jar-p (not (file-exists-p (c/expand-file-name source-file))))
       (mkdir c/download-directory t)
       (url-copy-file "https://github.com/smontanari/code-forensics/raw/v3.0.0/lib/analysers/code_maat/code-maat-1.0.1-standalone.jar" (c/expand-file-name source-file) t))
     (shell-command
@@ -341,7 +341,7 @@
       c/code-maat-command
       (f-filename repository)
       command
-      (if docker-command-p c/docker-data-directory c/tmp-directory))
+      (if maat-jar-p c/tmp-directory c/docker-data-directory))
      )))
 
 (defun c/produce-code-maat-revisions-report (repository)
