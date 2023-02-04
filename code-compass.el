@@ -47,6 +47,8 @@
   :tag "code-compass"
   :group 'code-compass)
 
+(defcustom c/default-port 8888 "Default port on which to serve analyses files." :type 'int :group 'code-compass)
+
 (defcustom c/default-periods
   '("beginning" "1d" "2d" "3d" "6d" "12d" "18d" "24d" "1m" "2m" "6m")
   "A list of choices for starting date to reducing the Git log for analysis. 'beginning' is a keyword to say to not reduce.'Nd' means to start after N days, where N is a positive number. 'Nm' means to start after N months, where N is a positive number."
@@ -402,14 +404,16 @@
 
 (defun c/navigate-to-localhost (repository &optional port)
   "Navigate to served directory for REPOSITORY, optionally at specified PORT."
-  (let ((port (or port 8888)))
+  (let ((port (or port c/default-port))
+        (browse-url-browser-function 'browse-url-generic)
+        (browse-url-generic-program c/preferred-browser))
     (browse-url (format "http://localhost:%s/zoomable.html" port)))
   repository)
 
 (defun c/run-server (repository &optional port)
   "Serve directory for REPOSITORY, optionally at PORT."
   (let ((httpd-host 'local)
-        (httpd-port (or port 8888)))
+        (httpd-port (or port c/default-port)))
     (httpd-stop)
     (ignore-errors (httpd-serve-directory (c/temp-dir repository))))
   repository)
@@ -437,31 +441,31 @@
       (setq c/tmp-directory ',c/tmp-directory)
       (setq c/docker-data-directory ',c/docker-data-directory)
       (setq c/download-directory ',c/download-directory)
+      (setq c/default-port ',c/default-port)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,c/preferred-browser))
         (funcall ',command ,repository ,date)))
    `(lambda (result)
-      (let ((browse-url-browser-function 'browse-url-generic)
-            (browse-url-generic-program ,c/preferred-browser))
-        (when (not ,do-not-serve) (c/run-server-and-navigate  ,(expand-file-name repository) (or ,port 8888)))))))
+      (when (not ,do-not-serve) (c/run-server-and-navigate  ,(expand-file-name repository) (or ,port c/default-port))))))
 
 (defun c/show-hotspots-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots starting at DATE, optionally served at PORT."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'c/request-date)))
+    (call-interactively 'c/request-date)
+    c/default-port))
   (c/in-temp-directory
    repository
    (--> repository
-     (c/produce-git-report it date)
-     c/produce-code-maat-revisions-report
-     c/produce-cloc-report
-     c/generate-merger-script
-     c/generate-d3-v3-lib
-     c/produce-json
-     c/generate-host-enclosure-diagram-html
-     (c/run-server-and-navigate it port))))
+        (c/produce-git-report it date)
+        c/produce-code-maat-revisions-report
+        c/produce-cloc-report
+        c/generate-merger-script
+        c/generate-d3-v3-lib
+        c/produce-json
+        c/generate-host-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
@@ -476,7 +480,7 @@
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))))
-  (--each c/snapshot-periods (c/show-hotspots-sync repository (c/request-date it) 8888)))
+  (--each c/snapshot-periods (c/show-hotspots-sync repository (c/request-date it) c/default-port)))
 
 ;; BEGIN indentation
 
@@ -676,7 +680,8 @@ code can infer it automatically."
   "Show REPOSITORY edge bundling synchronously for code coupling up to DATE. Serve graph on PORT."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'c/request-date)))
+                (call-interactively 'c/request-date)
+                8888))
   (c/in-temp-directory
    repository
    (--> repository
@@ -822,7 +827,8 @@ code can infer it automatically."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'c/request-date)))
+    (call-interactively 'c/request-date)
+    8888))
   (c/in-temp-directory
    repository
    (--> repository
@@ -885,9 +891,11 @@ code can infer it automatically."
 
 (defun c/show-knowledge-graph-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
-  (interactive (list
-                (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'c/request-date)))
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)
+    8888))
   (c/in-temp-directory
    repository
    (--> repository
@@ -929,9 +937,11 @@ code can infer it automatically."
 
 (defun c/show-refactoring-graph-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
-  (interactive (list
-                (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'c/request-date)))
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)
+    8888))
   (c/in-temp-directory
    repository
    (--> repository
@@ -980,20 +990,22 @@ code can infer it automatically."
 
 (defun c/show-code-age-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code stability/age up to DATE. Optionally define PORT on which to serve graph."
-  (interactive (list
-                (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'c/request-date)))
+  (interactive
+   (list
+    (read-directory-name "Choose git repository directory:" (vc-root-dir))
+    (call-interactively 'c/request-date)
+    8888))
   (c/in-temp-directory
    repository
    (--> repository
-     (c/produce-git-report it date)
-     c/produce-code-maat-age-report
-     c/produce-cloc-report
-     c/generate-age-json-script
-     c/generate-d3-v3-lib
-     c/produce-age-json
-     c/generate-host-age-enclosure-diagram-html
-     (c/run-server-and-navigate it port))))
+        (c/produce-git-report it date)
+        c/produce-code-maat-age-report
+        c/produce-cloc-report
+        c/generate-age-json-script
+        c/generate-d3-v3-lib
+        c/produce-age-json
+        c/generate-host-age-enclosure-diagram-html
+        (c/run-server-and-navigate it port))))
 
 (defun c/show-stability-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code stability up to DATE. Optionally define PORT on which to serve graph."
@@ -1362,7 +1374,8 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
   (interactive
    (list
     (read-directory-name "Choose repositories directory:" ".")
-    (call-interactively 'c/request-date)))
+    (call-interactively 'c/request-date)
+    8888))
   (let* ((filepath (s-concat repository "/repos-cluster.txt"))
          (directories
           (or (c/get-repositories-from-file filepath)
@@ -1381,22 +1394,22 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
      (c/produce-cloc-report repository)
      (--each directories
        (--> it
-         (c/produce-git-report it date)
-         (funcall no-prefix-revisions-fn it)
-         c/add-prepended-reports
-         ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
-         (let* ((filename (f-filename it))
-                (rev-file (s-concat filename "-revisions.csv")))
-           (--> rev-file
-             (with-temp-buffer
-               (insert-file-contents-literally it)
-               (buffer-substring-no-properties (point-min) (point-max)))
-             (s-split "\n" it 'omit-nulls)
-             cdr
-             (--map (concat filename "/" it) it)
-             (s-join "\n" it)
-             (format "%s\n" it)
-             (write-region it nil rev-file)))))
+            (c/produce-git-report it date)
+            (funcall no-prefix-revisions-fn it)
+            c/add-prepended-reports
+            ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
+            (let* ((filename (f-filename it))
+                   (rev-file (s-concat filename "-revisions.csv")))
+              (--> rev-file
+                   (with-temp-buffer
+                     (insert-file-contents-literally it)
+                     (buffer-substring-no-properties (point-min) (point-max)))
+                   (s-split "\n" it 'omit-nulls)
+                   cdr
+                   (--map (concat filename "/" it) it)
+                   (s-join "\n" it)
+                   (format "%s\n" it)
+                   (write-region it nil rev-file)))))
      (c/in-temp-directory
       repository
       ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
@@ -1410,11 +1423,11 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
        nil
        "revisions.csv")
       (--> repository
-        c/generate-merger-script
-        c/generate-d3-v3-lib
-        c/produce-json
-        c/generate-host-enclosure-diagram-html
-        (c/run-server-and-navigate it port))))))
+           c/generate-merger-script
+           c/generate-d3-v3-lib
+           c/produce-json
+           c/generate-host-enclosure-diagram-html
+           (c/run-server-and-navigate it port))))))
 
 (defun c/show-hotspot-cluster (directory date &optional port)
   "Show DIRECTORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
