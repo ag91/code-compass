@@ -328,7 +328,14 @@
       (format "--before=%s " before-date))
     (when c/exclude-directories
       (s-join " "  (--map (format "':(exclude)%s'" it) c/exclude-directories)))
-    "> gitreport.log"))
+    "> gitreport.log")
+   nil
+   (get-buffer-create "*c/produce-git-report-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-git-report-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-git-report-errors*\n\n" contents)))
   repository)
 
 (defun c/run-code-maat (command repository)
