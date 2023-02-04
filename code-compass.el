@@ -326,6 +326,8 @@
       (format "--after=%s " date))
     (when before-date
       (format "--before=%s " before-date))
+    (when c/exclude-directories
+      (s-join " "  (--map (format "':(exclude)%s'" it) c/exclude-directories)))
     "> gitreport.log"))
   repository)
 
