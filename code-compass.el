@@ -335,7 +335,7 @@
              (with-current-buffer "*c/produce-git-report-errors*"
                (buffer-string)))
             (_ (> (length contents) 1)))
-      (error (concat "c/produce-git-report-errors*\n\n" contents)))
+      (error (concat "c/produce-git-report-errors\n\n" contents)))
   repository)
 
 (defun c/run-code-maat (command repository)
@@ -353,7 +353,14 @@
       (f-filename repository)
       command
       (if maat-jar-p c/tmp-directory c/docker-data-directory))
-     )))
+     nil
+     (get-buffer-create "*c/run-code-maat-errors*")
+     )
+    (if-let* ((contents
+               (with-current-buffer "*c/run-code-maat-errors*"
+                 (buffer-string)))
+              (_ (> (length contents) 1)))
+        (error (concat "c/run-code-maat\n\n" contents)))))
 
 (defun c/produce-code-maat-revisions-report (repository)
   "Create code-maat revisions report for REPOSITORY."
@@ -364,7 +371,14 @@
   "Create cloc report for REPOSITORY. To filter specific subdirectories out of this report, edit the variable `c/exclude-directories'."
   (message "Producing cloc report...")
   (shell-command
-   (format "(cd %s; cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ",")))
+   (format "(cd %s; cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ","))
+   nil
+   (get-buffer-create "*c/produce-cloc-report-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-cloc-report-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-cloc-report*\n\n" contents)))
   repository)
 
 (defun c/copy-file (file-name directory &optional set-executable?)
@@ -401,8 +415,15 @@
   "Produce json for REPOSITORY."
   (message "Produce json...")
   (shell-command
-   "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json")
-  repository)
+   "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json"
+   nil
+   (get-buffer-create "*c/produce-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-json\n\n" contents))
+    repository))
 
 (defun c/generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
@@ -675,8 +696,15 @@ code can infer it automatically."
   "Produce coupling json needed by d3 for REPOSITORY."
   (message "Produce coupling json...")
   (shell-command
-   "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json")
-  repository)
+   "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json"
+   nil
+   (get-buffer-create "*c/produce-coupling-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-coupling-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-coupling-json\n\n" contents))
+    repository))
 
 (defun c/generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
@@ -828,8 +856,15 @@ code can infer it automatically."
   "Generate REPOSITORY age json."
   (message "Produce age json...")
   (shell-command
-   "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json")
-  repository)
+   "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json"
+   nil
+   (get-buffer-create "*c/produce-communication-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-communication-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-communication-json\n\n" contents))
+    repository))
 
 (defun c/show-code-communication-sync (repository date &optional port)
   "Show REPOSITORY edge bundling for code communication from DATE. Green edges is incoming (dependant) and red outgoing (dependencies).Optionally set the PORT on which to serve the graph."
@@ -873,8 +908,15 @@ code can infer it automatically."
   "Generate REPOSITORY age json."
   (message "Produce knowledge json...")
   (shell-command
-   "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json")
-  repository)
+   "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json"
+   nil
+   (get-buffer-create "*c/produce-knowledge-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-knowledge-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-knowledge-json\n\n" contents))
+    repository))
 
 (defun c/insert-authors-colors-in-file (authors-colors repository)
   (with-temp-file "authors.csv"
@@ -941,8 +983,15 @@ code can infer it automatically."
   "Generate REPOSITORY age json."
   (message "Produce refactoring json...")
   (shell-command
-   "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json") ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
-  repository)
+   "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json" ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
+   nil
+   (get-buffer-create "*c/produce-refactoring-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-refactoring-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-refactoring\n\n" contents))
+    repository))
 
 (defun c/show-refactoring-graph-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
@@ -987,8 +1036,15 @@ code can infer it automatically."
   "Generate REPOSITORY age json."
   (message "Produce age json...")
   (shell-command
-   "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json")
-  repository)
+   "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json"
+   nil
+   (get-buffer-create "*c/produce-age-json-errors*"))
+  (if-let* ((contents
+             (with-current-buffer "*c/produce-age-json-errors*"
+               (buffer-string)))
+            (_ (> (length contents) 1)))
+      (error (concat "c/produce-age-json\n\n" contents))
+    repository))
 
 (defun c/generate-host-age-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
@@ -1064,25 +1120,33 @@ code can infer it automatically."
     (c/in-temp-directory
      repository
      (--> repository
-       (c/produce-git-report it date)
-       c/produce-code-maat-entity-ownership-report
-       c/generate-pie-script
-       (c/get-analysis-as-string-from-csv repository "entity-ownership")
-       (c/add-filename-to-analysis-columns repository it)
-       (print it)
-       (--filter (s-starts-with-p path it) it)
-       (--map
-        (--> (s-split "," it)
-          (cons (nth 1 it) (+ (string-to-number (nth 2 it)) (string-to-number (nth 3 it)))))
-        it)
-       (c/sum-by-first-column it)
-       (--map
-        (--> it (format "%s,%s\n" (car it) (cdr it)))
-        it)
-       (cons "author,+&-lines\n" it)
-       (with-temp-file "fragmentation.csv"
-         (apply 'insert it)))
-     (shell-command (c/show-pie-chart-command "fragmentation.csv")))))
+          (c/produce-git-report it date)
+          c/produce-code-maat-entity-ownership-report
+          c/generate-pie-script
+          (c/get-analysis-as-string-from-csv repository "entity-ownership")
+          (c/add-filename-to-analysis-columns repository it)
+          (print it)
+          (--filter (s-starts-with-p path it) it)
+          (--map
+           (--> (s-split "," it)
+                (cons (nth 1 it) (+ (string-to-number (nth 2 it)) (string-to-number (nth 3 it)))))
+           it)
+          (c/sum-by-first-column it)
+          (--map
+           (--> it (format "%s,%s\n" (car it) (cdr it)))
+           it)
+          (cons "author,+&-lines\n" it)
+          (with-temp-file "fragmentation.csv"
+            (apply 'insert it)))
+     (shell-command
+      (c/show-pie-chart-command "fragmentation.csv")
+      nil
+      (get-buffer-create "*c/show-fragmentation-sync-errors*"))
+     (if-let* ((contents
+                (with-current-buffer "*c/show-fragmentation-sync-errors*"
+                  (buffer-string)))
+               (_ (> (length contents) 1)))
+         (error (concat "c/show-fragmentation-sync\n\n" contents))))))
 
 (defun c/show-fragmentation (path)
   "Show knowledge fragmentation for PATH."
