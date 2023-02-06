@@ -313,24 +313,29 @@
       (c/temp-dir ,repository)
       ,@body)))
 
-(defun c/produce-git-report (repository date &optional before-date)
+(defun c/produce-git-report (repository date &optional before-date authors)
   "Create git report for REPOSITORY with a Git log starting at DATE. Define optionally a BEFORE-DATE."
   (interactive
    (list (call-interactively 'c/request-date)))
   (message "Producing git report...")
-  (shell-command
-   (s-concat
-    (format "git -C %s" repository)
-    " log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
-    (when date
-      (format "--after=%s " date))
-    (when before-date
-      (format "--before=%s " before-date))
-    (when c/exclude-directories
-      (s-join " "  (--map (format "':(exclude)%s'" it) c/exclude-directories)))
-    "> gitreport.log")
-   nil
-   (get-buffer-create "*c/produce-git-report-errors*"))
+  (let ((git-command
+         (s-concat
+          (format "git -C %s" repository)
+          " log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
+          (when authors
+            (format "--perl-regexp --author='%s' " authors))
+          (when date
+            (format "--after=%s " date))
+          (when before-date
+            (format "--before=%s " before-date))
+          (when c/exclude-directories
+            (s-join " "  (--map (format "':(exclude)%s'" it) c/exclude-directories)))
+          " > gitreport.log")))
+    (message "Running %s" git-command)
+    (shell-command
+     git-command
+     nil
+     (get-buffer-create "*c/produce-git-report-errors*")))
   (if-let* ((contents
              (with-current-buffer "*c/produce-git-report-errors*"
                (buffer-string)))
@@ -371,7 +376,7 @@
   "Create cloc report for REPOSITORY. To filter specific subdirectories out of this report, edit the variable `c/exclude-directories'."
   (message "Producing cloc report...")
   (shell-command
-   (format "(cd %s; cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ","))
+   (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ","))
    nil
    (get-buffer-create "*c/produce-cloc-report-errors*"))
   (if-let* ((contents
@@ -454,7 +459,7 @@
     (c/run-server repository port)
     (c/navigate-to-localhost repository port)))
 
-(defun c/async-run (command repository date &optional port do-not-serve)
+(defun c/async-run (command repository date &optional port do-not-serve authors)
   "Run asynchronously COMMAND taking a REPOSITORY and a DATE, optionally at PORT."
   (async-start
    `(lambda ()
@@ -474,7 +479,7 @@
       (setq c/default-port ',c/default-port)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,c/preferred-browser))
-        (funcall ',command ,repository ,date)))
+        (funcall ',command ,repository ,date ',authors))) ; TODO shouldn't pass authors like this, as it is only for knowledge analysis.
    `(lambda (result)
       (when (not ,do-not-serve) (c/run-server-and-navigate  ,(expand-file-name repository) (or ,port c/default-port))))))
 
@@ -923,12 +928,16 @@ code can infer it automatically."
     (insert "author,color\n")
     (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
 
-(defun c/generate-list-authors-colors (repository)
-  "Generate list of authors of REPOSITORY."
+(defun c/get-authors (repository)
+  "Retrieve authors in REPOSITORY."
   (--> (s-concat "cd " repository "; git shortlog HEAD -s -n | uniq | cut -f 2")
        shell-command-to-string
        (s-split "\n" it)
-       (--remove (s-blank? (s-trim it)) it)
+       (--remove (s-blank? (s-trim it)) it)))
+
+(defun c/generate-list-authors-colors (repository)
+  "Generate list of authors of REPOSITORY."
+  (--> (c/get-authors repository)
        (-zip it c/authors-colors)
        (c/insert-authors-colors-in-file it repository))
   repository)
@@ -940,17 +949,20 @@ code can infer it automatically."
   (c/copy-file "./pages/knowledge-enclosure-diagram/zoomable.html" (c/temp-dir repository))
   repository)
 
-(defun c/show-knowledge-graph-sync (repository date &optional port)
-  "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
-  (interactive
-   (list
-    (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'c/request-date)
-    8888))
+(defun c/show-knowledge-graph-sync (repository date authors &optional port)
+  "Show REPOSITORY enclosure diagram for code knowledge up to DATE limited to AUTHORS. Optionally define PORT on which to serve graph."
+  (interactive (let ((repository (read-directory-name "Choose git repository directory:" (vc-root-dir))))
+                 (list
+                  repository
+                  (call-interactively 'c/request-date)
+                  (completing-read-multiple "Filter by authors (TAB-completion) or leave empty for all: " (c/get-authors repository))
+                  8888)))
   (c/in-temp-directory
    repository
    (--> repository
-        (c/produce-git-report it date)
+        (c/produce-git-report it date nil (if (length> authors 1)
+                                              (s-concat "(" (s-join "|" authors) ")")
+                                            authors))
         c/produce-code-maat-main-dev-report
         c/produce-cloc-report
         c/generate-knowledge-json-script
@@ -960,12 +972,15 @@ code can infer it automatically."
         c/generate-host-knowledge-enclosure-diagram-html
         (c/run-server-and-navigate it port))))
 
-(defun c/show-knowledge-graph (repository date &optional port)
-  "Show REPOSITORY enclosure diagram for code knowledge up to DATE. Optionally define PORT on which to serve graph."
-  (interactive (list
-                (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'c/request-date)))
-  (c/async-run 'c/show-knowledge-graph-sync repository date port))
+(defun c/show-knowledge-graph (repository date authors &optional port)
+  "Show REPOSITORY enclosure diagram for code knowledge up to DATE limited to AUTHORS. Optionally define PORT on which to serve graph."
+  (interactive (let ((repository (read-directory-name "Choose git repository directory:" (vc-root-dir))))
+                 (list
+                  repository
+                  (call-interactively 'c/request-date)
+                  (completing-read-multiple "Filter by authors (TAB-completion) or leave empty for all: " (c/get-authors repository))
+                  8888)))
+  (c/async-run 'c/show-knowledge-graph-sync repository date port nil authors))
 ;; END code knowledge
 
 ;; BEGIN code refactoring
