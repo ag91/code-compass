@@ -211,7 +211,7 @@
                              "yellowgreen")
   "Colors to use for authors.")
 
-(defcustom code-compass-pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s" "Command to visualize chart" :type 'string :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
+(defcustom code-compass-pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s" "Command to visualize chart." :type 'string :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
 
 (defcustom code-compass-gource-command
   "gource"
@@ -226,7 +226,7 @@
 (defcustom code-compass-display-icon
   't
   "Display an icon in modeline showing growth trend of code.
-   A pointing up icon means the code has been growing,
+A pointing up icon means the code has been growing,
    a pointing down arrow has been decreasing.")
 
 (defcustom code-compass-icon-trends
@@ -291,25 +291,29 @@
 (defalias 'c/request-date 'code-compass-request-date)
 
 (defun code-compass--first (l)
+  "Get first element of L."
   (car l))
 
 (defun code-compass--second (l)
+  "Get second element of L."
   (nth 1 l))
 
 (defun code-compass--third (l)
+  "Get third element of L."
   (nth 2 l))
 
 (defun code-compass--temp-dir (repository)
+  "Format temporary directory in which store analyses assets for REPOSITORY."
   (format "%s/code-compass-%s/" code-compass-tmp-directory (f-filename repository)))
 
 (defmacro code-compass--in-directory (directory &rest body)
-  "Executes BODY in DIRECTORY by temporarily changing current buffer's default directory to DIRECTORY."
+  "Execute BODY in DIRECTORY by temporarily changing current buffer's default directory to DIRECTORY."
   `(let ((default-directory ,directory))
      (unwind-protect
          ,@body)))
 
 (defmacro code-compass--in-temp-directory (repository &rest body)
-  "Executes BODY in temporary directory created for analysed REPOSITORY."
+  "Execute BODY in temporary directory created for analysed REPOSITORY."
   `(progn
      (mkdir (code-compass--temp-dir ,repository) t)
      (code-compass--in-directory
@@ -317,7 +321,9 @@
       ,@body)))
 
 (defun code-compass-produce-git-report (repository date &optional before-date authors)
-  "Create git report for REPOSITORY with a Git log starting at DATE. Define optionally a BEFORE-DATE."
+  "Create git report for REPOSITORY with a Git log starting at DATE.
+Define optionally a BEFORE-DATE.
+The knowledge analysis allow to filter by AUTHORS when set."
   (interactive
    (list (call-interactively 'code-compass-request-date)))
   (message "Producing git report...")
@@ -394,6 +400,7 @@
   repository)
 
 (defun code-compass--copy-file (file-name directory)
+  "Copy FILE-NAME to DIRECTORY."
   (copy-file (code-compass--expand-file-name file-name) directory t)
   (set-file-modes (concat directory "/" (file-name-nondirectory file-name)) (file-modes-symbolic-to-number "u=rw,go=r")))
 
@@ -466,7 +473,9 @@
     (code-compass--navigate-to-localhost repository port)))
 
 (defun code-compass--async-run (command repository date &optional port do-not-serve authors)
-  "Run asynchronously COMMAND taking a REPOSITORY and a DATE, optionally at PORT."
+  "Run asynchronously COMMAND taking a REPOSITORY and a DATE, optionally at PORT.
+Optional argument DO-NOT-SERVE skips serving contents on localhost.
+Optional argument AUTHORS to filter AUTHORS for knowledge analysis."
   (async-start
    `(lambda ()
       (setq load-path ',load-path)
@@ -512,7 +521,7 @@
 (defalias 'c/show-hotspots-sync 'code-compass-show-hotspots-sync)
 
 (defun code-compass-show-hotspots (repository date &optional port)
-  "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT defines where the html is served."
+  "Show REPOSITORY enclosure diagram for hotspots. Starting DATE reduces scope of Git log and PORT define where the html is served."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
@@ -588,15 +597,15 @@
       (used-indentation . ,(code-compass--second complexities-indentation)))))
 
 (defun code-compass-calculate-complexity-stats (code &optional opts)
-  "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation. Return `nil' for empty CODE."
+  "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation. Return nil for empty CODE."
   (ignore-errors
     (--> code
-      ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
-      code-compass--split-on-newlines
-      code-compass--remove-empty-lines
-      code-compass--remove-text-after-indentation
-      (code-compass--as-logical-indents it opts)
-      code-compass--stats-from)))
+         ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
+         code-compass--split-on-newlines
+         code-compass--remove-empty-lines
+         code-compass--remove-text-after-indentation
+         (code-compass--as-logical-indents it opts)
+         code-compass--stats-from)))
 (defalias 'c/calculate-complexity-stats 'code-compass-calculate-complexity-stats)
 
 (defun code-compass-calculate-complexity-current-buffer (&optional indentation)
@@ -643,13 +652,15 @@ code can infer it automatically."
   (s-replace "\n" "" (shell-command-to-string (s-concat "git show --no-patch --no-notes --pretty='%cd' --date=short " commit))))
 
 (defun code-compass--calculate-complexity-over-commits (file &optional opts)
+  "Calculate complexity of FILE over commits.
+Optional argument OPTS defines things like the indentation to use."
   (--> (call-interactively 'code-compass-request-date)
-    (code-compass--retrieve-commits-up-to-date-touching-file file it)
-    (--map
-     (--> it
-       (list it (code-compass--retrieve-file-at-commit-with-git file it))
-       (list (code-compass--first it) (code-compass-calculate-complexity-stats (code-compass--second it) opts)))
-     it)))
+       (code-compass--retrieve-commits-up-to-date-touching-file file it)
+       (--map
+        (--> it
+             (list it (code-compass--retrieve-file-at-commit-with-git file it))
+             (list (code-compass--first it) (code-compass-calculate-complexity-stats (code-compass--second it) opts)))
+        it)))
 (defalias 'c/calculate-complexity-over-commits 'code-compass--calculate-complexity-over-commits)
 
 (defun code-compass--plot-csv-file-with-graph-cli (file)
@@ -844,6 +855,7 @@ code can infer it automatically."
 (defalias 'c/get-coupled-files-alist-hook-fn 'code-compass-get-coupled-files-alist-hook-fn)
 
 (defun code-compass--show-coupled-files (files file-name)
+  "Gather coupled files to FILE-NAME from all FILES."
   (--> files
        (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
        (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
@@ -862,7 +874,7 @@ code can infer it automatically."
   )
 
 (defun code-compass-find-coupled-files ()
-  "Allow user to choose files coupled according to previous changes."
+  "Allow user to choose files coupled according to previous modifications."
   (interactive)
   (code-compass--get-coupled-files-alist
    (vc-root-dir)
@@ -931,7 +943,8 @@ code can infer it automatically."
   repository)
 
 (defun code-compass--generate-knowledge-json-script (repository)
-  "Generate python script."
+  "Generate python script.
+Argument REPOSITORY defines for which repo to run this."
   (code-compass--copy-file "./scripts/knowledge_csv_as_enclosure_diagram.py" (code-compass--temp-dir repository))
   repository)
 
@@ -950,6 +963,7 @@ code can infer it automatically."
     repository))
 
 (defun code-compass--insert-authors-colors-in-file (authors-colors repository)
+  "Insert a csv of AUTHORS-COLORS in the temporary asset directory for REPOSITORY."
   (with-temp-file "authors.csv"
     (insert "author,color\n")
     (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
@@ -1018,7 +1032,7 @@ code can infer it automatically."
   repository)
 
 (defun code-compass--generate-refactoring-json-script (repository)
-  "Generate python script."
+  "Generate python script for REPOSITORY."
   (code-compass--copy-file "./scripts/refactoring_csv_as_enclosure_diagram.py" (code-compass--temp-dir repository))
   repository)
 
@@ -1149,6 +1163,7 @@ code can infer it automatically."
   (format code-compass-pie-or-bar-chart-command file))
 
 (defun code-compass--sum-by-first-column (rows)
+  "Utility to sum ROWS by first column."
   (let (result)
     (dolist (row rows)
       (let* ((key (car row))
@@ -1160,7 +1175,8 @@ code can infer it automatically."
     result))
 
 (defun code-compass-show-fragmentation-sync (path &optional date)
-  "Show knowledge fragmentation for PATH."
+  "Show knowledge fragmentation for PATH.
+Optional argument DATE to reduce time window."
   (interactive "fShow fragmentation for:")
   (let* ((path (file-truename path))
          (repository (s-trim (shell-command-to-string (format "cd %s; git rev-parse --show-toplevel" (file-name-directory path))))))
@@ -1501,7 +1517,7 @@ code can infer it automatically."
 
 (defun code-compass-show-hotspot-cluster-sync (repository date &optional port)
   "Show hotspot analysis for the repositories in DIRECTORY starting it from DATE.
-If a file `repos-cluster.txt' exists with a list of repositories in the current repository, this has priority over DIRECTORY."
+If a file `repos-cluster.txt' exists with a list of repositories in the current REPOSITORY, this has priority over DIRECTORY."
   (interactive
    (list
     (read-directory-name "Choose repositories directory:" ".")
@@ -1651,7 +1667,9 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 (defalias 'c/cheatsheet 'code-compass-cheatsheet)
 
 (defun code-compass-show-raw-csv (analysis repository date)
-  "Show REPOSITORY edge bundling synchronously for code coupling up to DATE. Serve graph on PORT."
+  "Show REPOSITORY edge bundling synchronously for code coupling up to DATE.
+Serve graph on PORT.
+Argument ANALYSIS sets the anylysis command to run."
   (interactive (list
                 (completing-read "Analysis:"
                                  '("authors" "revisions" "coupling" "soc" "summary" "identity" "abs-churn" "author-churn" "entity-churn" "entity-ownership" "main-dev" "refactoring-main-dev" "entity-effort" "main-dev-by-revs" "fragmentation" "communication" "messages" "age"))
@@ -1673,3 +1691,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 
 (provide 'code-compass)
 ;;; code-compass ends here
+
+(provide 'code-compass)
+
+;;; code-compass.el ends here
