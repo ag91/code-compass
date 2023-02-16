@@ -27,9 +27,9 @@
 
 (ert-deftest c/expand-file-name_expanded-file-name ()
   (let ((default-directory "/tmp")
-        (c/path-to-code-compass "somePath"))
+        (code-compass-path-to-code-compass "somePath"))
     (should
-     (string= (c/expand-file-name "someFile") "/tmp/somePath/someFile"))))
+     (string= (code-compass--expand-file-name "someFile") "/tmp/somePath/someFile"))))
 
 (defun utils/parse-string-as-time (date-string)
   "Parse DATE-STRING as time."
@@ -42,7 +42,7 @@
    (string=
     (format-time-string
      "%Y-%m-%d"
-     (c/subtract-to-now
+     (code-compass--subtract-to-now
       1
       24
       (utils/parse-string-as-time "2021-01-02")))
@@ -51,25 +51,25 @@
 (ert-deftest c/request-date_git-date ()
   (should
    (string=
-    (c/request-date "1d" (utils/parse-string-as-time "2021-01-02"))
+    (code-compass-request-date "1d" (utils/parse-string-as-time "2021-01-02"))
     "2021-01-01")))
 
 (ert-deftest c/temp-dir_give-temp-dir-for-analyses ()
   (should
-   (string= (c/temp-dir "someRepo") "/tmp/code-compass-someRepo/")))
+   (string= (code-compass--temp-dir "someRepo") "/tmp/code-compass-someRepo/")))
 
 (ert-deftest c/in-temp-directory_run-in-directory ()
   (should
-   (string= (c/in-temp-directory "someDir" default-directory) "/tmp/code-compass-someDir/")))
+   (string= (code-compass--in-temp-directory "someDir" default-directory) "/tmp/code-compass-someDir/")))
 
 (ert-deftest c/calculate-complexity-stats_empty-stats ()
   (should
-   (string= (c/calculate-complexity-stats "") nil)))
+   (string= (code-compass--calculate-complexity-stats "") nil)))
 
 (ert-deftest c/calculate-complexity-stats_return-stats ()
   (should
    (equal
-    (c/calculate-complexity-stats
+    (code-compass--calculate-complexity-stats
      "
 (let ((x 1))
   (let ((y 2))
@@ -85,14 +85,14 @@
 (ert-deftest c/add-filename-to-analysis-columns_prefix-lines ()
   (should
    (equal
-    (c/add-filename-to-analysis-columns
+    (code-compass--add-filename-to-analysis-columns
      "someRepo"
      "some,analysis\nsomeEntry,someData\n\n")
     '("some,analysis" "someRepo/someEntry,someData"))))
 
 (ert-deftest c/sum-by-first-column_sums-rows-first-column ()
   (should
-   (equal (c/sum-by-first-column
+   (equal (code-compass--sum-by-first-column
            '(("a" . 1)
              ("b" . 1)
              ("a" . 1)
@@ -104,7 +104,7 @@
 (ert-deftest c/word-stats_distribution-of-words ()
   (should
    (equal
-    (c/word-stats "hi, hi, hi, hello, hello\nbla")
+    (code-compass--word-stats "hi, hi, hi, hello, hello\nbla")
     '(("," . 4) ("hi" . 3) ("hello" . 2) ("bla" . 1)))))
 
 ;; Just evaluate buffer to run tests.
