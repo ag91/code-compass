@@ -1462,7 +1462,8 @@ code can infer it automatically."
 (defun code-compass-slack-main-contributor ()
   "Open slack chat with main contributor of file."
   (interactive)
-  (if slack-current-team
+  ;; Allow slack only if user has it installed, and has set a current team
+  (if (and (fboundp 'slack) slack-current-team)
       (code-compass--open-slack-from-email (code-compass--get-main-contributor-email))
     (message "Sorry, setup your emacs-slack to use this function. See https://github.com/yuya373/emacs-slack.")))
 (defalias 'c/slack-main-contributor 'code-compass-slack-main-contributor)
