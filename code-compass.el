@@ -485,7 +485,9 @@
       (setq code-compass-default-port ',code-compass-default-port)
       (let ((browse-url-browser-function 'browse-url-generic)
             (browse-url-generic-program ,code-compass-preferred-browser))
-        (funcall ',command ,repository ,date ',authors))) ; TODO shouldn't pass authors like this, as it is only for knowledge analysis.
+        (if ,authors
+            (funcall ',command ,repository ,date ',authors) ; TODO shouldn't pass authors like this, as it is only for knowledge analysis.
+          (funcall ',command ,repository ,date))))
    `(lambda (result)
       (when (not ,do-not-serve) (code-compass--run-server-and-navigate  ,(expand-file-name repository) (or ,port code-compass-default-port))))))
 
