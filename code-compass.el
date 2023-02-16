@@ -380,7 +380,7 @@
   "Create cloc report for REPOSITORY. To filter specific subdirectories out of this report, edit the variable `code-compass-exclude-directories'."
   (message (concat
             "Producing cloc report with "
-            (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join c/exclude-directories ","))
+            (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories'. ","))
             "..."))
   (shell-command
    (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
@@ -585,7 +585,7 @@
       (standard-deviation . ,sd)
       (used-indentation . ,(code-compass--second complexities-indentation)))))
 
-(defun code-compass--calculate-complexity-stats (code &optional opts)
+(defun code-compass-calculate-complexity-stats (code &optional opts)
   "Return complexity of CODE based on indentation. If OPTS is provided, use these settings to define what is the indentation. Return `nil' for empty CODE."
   (ignore-errors
     (--> code
@@ -595,6 +595,7 @@
       code-compass--remove-text-after-indentation
       (code-compass--as-logical-indents it opts)
       code-compass--stats-from)))
+(defalias 'c/calculate-complexity-stats 'code-compass-calculate-complexity-stats)
 
 (defun code-compass-calculate-complexity-current-buffer (&optional indentation)
   "Calculate complexity of the current buffer contents.
@@ -602,7 +603,7 @@ Optionally you can provide the INDENTATION level of the file. The
 code can infer it automatically."
   (interactive)
   (message "%s"
-           (code-compass--calculate-complexity-stats
+           (code-compass-calculate-complexity-stats
             (buffer-substring-no-properties (point-min) (point-max)) indentation)))
 
 (defalias 'c/calculate-complexity-current-buffer 'code-compass-calculate-complexity-current-buffer)
@@ -645,7 +646,7 @@ code can infer it automatically."
     (--map
      (--> it
        (list it (code-compass--retrieve-file-at-commit-with-git file it))
-       (list (code-compass--first it) (code-compass--calculate-complexity-stats (code-compass--second it) opts)))
+       (list (code-compass--first it) (code-compass-calculate-complexity-stats (code-compass--second it) opts)))
      it)))
 (defalias 'c/calculate-complexity-over-commits 'code-compass--calculate-complexity-over-commits)
 
@@ -827,7 +828,7 @@ code can infer it automatically."
   (clrhash code-compass-coupling-project-map))
 (defalias 'c/clear-coupling-project-map 'code-compass-clear-coupling-project-map)
 
-(defun code-compass--get-coupled-files-alist-hook-fn ()
+(defun code-compass-get-coupled-files-alist-hook-fn ()
   "Calculate coupled files asynchronously."
   (let ((git-root (ignore-errors (vc-root-dir))))
     (when git-root
@@ -838,23 +839,24 @@ code can infer it automatically."
            "Finished to update coupled files for %s and found %s coupled files."
            ,git-root
            (length x)))))))
+(defalias 'c/get-coupled-files-alist-hook-fn 'code-compass-get-coupled-files-alist-hook-fn)
 
 (defun code-compass--show-coupled-files (files file-name)
   (--> files
-    (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
-    (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
-    (-map (lambda (file)
-            (when (or (string= (file-truename file-name) (file-truename (car file)))
-                      (string= (file-truename file-name) (file-truename (nth 1 file))))
-              (car
-               (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file)))))
-          it)
-    (-remove 'null it)
-    (if (null it)
-        (message "No coupled file found!")
-      (let ((open-file (completing-read "Find coupled file: " it nil 't)))
-        (find-file open-file)
-        )))
+       (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
+       (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+       (-map (lambda (file)
+               (when (or (string= (file-truename file-name) (file-truename (car file)))
+                         (string= (file-truename file-name) (file-truename (nth 1 file))))
+                 (car
+                  (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file)))))
+             it)
+       (-remove 'null it)
+       (if (null it)
+           (message "No coupled file found!")
+         (let ((open-file (completing-read "Find coupled file: " it nil 't)))
+           (find-file open-file)
+           )))
   )
 
 (defun code-compass-find-coupled-files ()
@@ -1585,11 +1587,12 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
     (message "Contributors of %s:\n%s" (buffer-file-name) (code-compass--contributors-list-for-current-buffer))))
 (defalias 'c/display-contributors 'code-compass-display-contributors)
 
-(defun code-compass--display-contributors-delayed ()
+(defun code-compass-display-contributors-delayed ()
   "Delayed version of `code-compass--display-contributors` for use in hooks (for example `prog-mode-hook')."
   (run-with-timer 0.1 nil 'code-compass-display-contributors))
+(defalias 'c/display-contributors-delayed 'code-compass-display-contributors-delayed)
 
-(add-hook 'prog-mode-hook #'code-compass--display-contributors-delayed)
+(add-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)
 ;; END display contributors
 
 (defun code-compass-cheatsheet ()
