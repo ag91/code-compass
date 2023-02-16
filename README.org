@@ -18,7 +18,7 @@ talk of EmacsConf2020]].
 
 A significant part of this project relies on [[https://github.com/adamtornhill/code-maat][code-maat]] and the bright
 mind of his author Adam Tornhill. His books are inspiring and a
-[[https://pragprog.com/titles/atcrime/your-code-as-a-crime-scene/][suggested]] [[https://pragprog.com/titles/atevol/software-design-x-rays/][read]]. 
+[[https://pragprog.com/titles/atcrime/your-code-as-a-crime-scene/][suggested]] [[https://pragprog.com/titles/atevol/software-design-x-rays/][read]].
 
 ** Features
 :PROPERTIES:
@@ -26,7 +26,7 @@ mind of his author Adam Tornhill. His books are inspiring and a
 :ID:       9c50d648-8562-497e-93d4-088db1a326a8
 :END:
 
-Use =c/cheatsheet= to have a quick reference of the available commands and their aim.
+Use =code-compass-cheatsheet= to have a quick reference of the available commands and their aim.
 Check the =Release Checklist= heading for more information about them.
 
 ** Installation and Dependencies
@@ -35,7 +35,7 @@ Check the =Release Checklist= heading for more information about them.
 :ID:       6d691473-a522-46cf-ae41-09fd5c2c69df
 :END:
 
-*Please run =c/doctor= if you encounter errors in running this tool*
+*Please run =code-compass-doctor= if you encounter errors in running this tool*
 
 Note: I label dependencies as *optional* when the commands needing the
 dependency warn you they cannot execute because the dependency is
@@ -308,5 +308,3 @@ it! Thanks for caring.
   example, you are struggling to identify the commit that broke your
   release.
 - ???
-  
-  
