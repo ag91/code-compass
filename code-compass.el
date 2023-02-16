@@ -237,7 +237,7 @@
             :more-deletions   (propertize "↘" 'face `(:background "GreenYellow")))
   "Icon and period of evaluation for trend.")
 
-(defcustom code-compass-slack-main-contributor 't
+(defcustom code-compass-display-file-contributors 't
   "Enable the listing of contributors for a file in the *Messages* buffer.")
 
 
@@ -1584,7 +1584,7 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
 (defun code-compass-display-contributors ()
   "Show in minibuffer the main contributors of this file."
   (interactive)
-  (when (and code-compass-slack-main-contributor (buffer-file-name))
+  (when (and code-compass-display-file-contributors (buffer-file-name))
     (message "Contributors of %s:\n%s" (buffer-file-name) (code-compass--contributors-list-for-current-buffer))))
 (defalias 'c/display-contributors 'code-compass-display-contributors)
 
