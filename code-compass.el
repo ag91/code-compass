@@ -1602,7 +1602,6 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
   (org-mode)
   (insert "
       | Command                                          | Description                                                     |
-      | Command                                          | Description                                                     |
       |--------------------------------------------------+-----------------------------------------------------------------|
       | code-compass-doctor                              | Check dependencies are satisfied.                               |
       |--------------------------------------------------+-----------------------------------------------------------------|
@@ -1644,45 +1643,6 @@ If a file `repos-cluster.txt' exists with a list of repositories in the current 
       | code-compass-display-contributors                | Show contributors for current file in minibuffer.               |
       | code-compass-show-raw-csv                        | Show the raw csv file for code-maat analyses.                   |
       |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-doctor                              | Check dependencies are satisfied.                               |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | Graphs                                           |                                                                 |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-show-hotspots                       | Show code that changed more frequently in the last period.      |
-      | code-compass-show-hotspot-snapshot-sync          | Show hotspots over many intervals of times.                     |
-      | code-compass-show-hotspot-cluster                | Show hotspots graph for a directory containing many projects.   |
-      | code-compass-show-code-churn                     | Show code throughput/churn in the last period.                  |
-      | code-compass-show-coupling-graph                 | Show which file is coupled to which in the last period.         |
-      | code-compass-show-code-communication             | Show which contributors are/should likely chat with each other. |
-      | code-compass-show-knowledge-graph                | Show who knows most about what code.                            |
-      | code-compass-show-refactoring-graph              | Show who refactored most what code.                             |
-      | code-compass-show-stability-graph                | Show the code that is most stable in last period.               |
-      | code-compass-show-fragmentation                  | Show pie chart with how much people contributed to file.        |
-      | code-compass-show-gource                         | Show gource video of repository contributions.                  |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | Complexity                                       |                                                                 |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-calculate-complexity-current-buffer | Prints complexity stats of current buffer.                      |
-      | code-compass-show-complexity-over-commits        | Show line graph of complexity for current file from the start.  |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | Word analysis                                    |                                                                 |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-word-statistics                     | Show stats about words in buffer.                               |
-      | code-compass-word-semantics                      | Show words least used in buffer.                                |
-      | code-compass-word-analysis-commits               | Show frequency of words in commit messages.                     |
-      | code-compass-word-analysis-region                | Show frequency of words in region (useful on functions)         |
-      | code-compass-word-analysis-region-graph          | Show graph for words frequency in region.                       |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | Coupling extras                                  |                                                                 |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-create-todos-from-coupled-files     | Make TODO list from coupled files.                              |
-      | code-compass-find-coupled-files                  | Jump to a file coupled to the current one, if available.        |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | Contributors extras                              |                                                                 |
-      |--------------------------------------------------+-----------------------------------------------------------------|
-      | code-compass-slack-main-contributor              | Chat with main contributor of file via emacs-slack.             |
-      | code-compass-display-contributors                | Show contributors for current file in minibuffer.               |
-      | code-compass-show-raw-csv                        | Show the raw csv file for code-maat analyses.                   |
 
 "))
 (defalias 'c/cheatsheet 'code-compass-cheatsheet)
