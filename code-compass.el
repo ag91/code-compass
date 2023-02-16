@@ -1,11 +1,12 @@
-;;; code-compass.el --- Make Emacs your compass in a sea of software complexity.
+;;; code-compass.el --- Make Emacs your compass in a sea of software complexity
 
 ;; Copyright (C) 2023 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
 ;; Version: 0.1.2
-;; Package-Version: 20230131
-;; Keywords: emacs, sofware, analysis
+;; Package-Requires: ((emacs "26.1"))
+;; Keywords: tools, extensions, help
+;; Homepage: https://github.com/ag91/code-compass
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -18,11 +19,11 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ;;; Commentary:
 
-;; Make Emacs your compass in a sea of software complexity
+;; Make Emacs your compass in a sea of software complexity.
 ;;
 ;; This tool puts the power and knowledge of your repository history in your hands.
 ;; The current analyses supported are:
@@ -369,8 +370,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
       command
       (if maat-jar-p code-compass-tmp-directory code-compass-docker-data-directory))
      nil
-     (get-buffer-create "*code-compass--run-code-maat-errors*")
-     )
+     (get-buffer-create "*code-compass--run-code-maat-errors*"))
     (if-let* ((contents
                (with-current-buffer "*code-compass--run-code-maat-errors*"
                  (buffer-string)))
@@ -869,9 +869,7 @@ Optional argument OPTS defines things like the indentation to use."
        (if (null it)
            (message "No coupled file found!")
          (let ((open-file (completing-read "Find coupled file: " it nil 't)))
-           (find-file open-file)
-           )))
-  )
+           (find-file open-file)))))
 
 (defun code-compass-find-coupled-files ()
   "Allow user to choose files coupled according to previous modifications."
