@@ -380,7 +380,7 @@
   "Create cloc report for REPOSITORY. To filter specific subdirectories out of this report, edit the variable `code-compass-exclude-directories'."
   (message (concat
             "Producing cloc report with "
-            (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories'. ","))
+            (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
             "..."))
   (shell-command
    (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
