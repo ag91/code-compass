@@ -1,10 +1,10 @@
-;;; code-compass.el --- Make Emacs your compass in a sea of software complexity
+;;; code-compass.el --- Make Emacs your compass in a sea of software complexity -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023 Andrea Giugliano
+;; Copyright (C) 2023 Andrea
 
-;; Author: Andrea Giugliano <agiugliano@live.it>
+;; Author: Andrea <andrea-dev@hotmail.com>
 ;; Version: 0.1.3
-;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1"))
+;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1") url)
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
 
@@ -1773,9 +1773,6 @@ Argument ANALYSIS sets the anylysis command to run."
        (insert (concat repository)))
      (goto-char (point-min)))))
 (defalias 'c/show-raw-csv 'code-compass-show-raw-csv)
-
-(provide 'code-compass)
-;;; code-compass ends here
 
 (provide 'code-compass)
 
