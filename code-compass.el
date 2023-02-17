@@ -3,8 +3,8 @@
 ;; Copyright (C) 2023 Andrea Giugliano
 
 ;; Author: Andrea Giugliano <agiugliano@live.it>
-;; Version: 0.1.2
-;; Package-Requires: ((emacs "26.1"))
+;; Version: 0.1.3
+;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1"))
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
 
@@ -36,7 +36,6 @@
 
 ;;; Code:
 (require 'dash)
-(require 'f)
 (require 's)
 (require 'simple-httpd)
 (require 'async)
@@ -48,7 +47,10 @@
   :tag "code-compass"
   :group 'code-compass)
 
-(defcustom code-compass-default-port 8888 "Default port on which to serve analyses files." :type 'int :group 'code-compass)
+(defcustom code-compass-default-port 8888
+  "Default port on which to serve analyses files."
+  :type 'int
+  :group 'code-compass)
 
 (defcustom code-compass-default-periods
   '("beginning" "1d" "2d" "3d" "6d" "12d" "18d" "24d" "1m" "2m" "6m")
@@ -66,9 +68,7 @@
   :type 'string)
 
 (defconst code-compass-path-to-code-compass (file-name-directory load-file-name)
-  "Path to code compass."
-  :group 'code-compass
-  :type 'string)
+  "Path to code compass.")
 
 (defun code-compass--expand-file-name (file-name)
   "Expand FILE-NAME with `code-compass-path-to-code-compass'."
@@ -344,9 +344,13 @@ Optionally give TIME from which to start."
   "Get third element of L."
   (nth 2 l))
 
+(defun code-compass--filename (file)
+  "Get filename of FILE."
+  (file-name-nondirectory (directory-file-name file)))
+
 (defun code-compass--temp-dir (repository)
   "Format temporary directory in which store analyses assets for REPOSITORY."
-  (format "%s/code-compass-%s/" code-compass-tmp-directory (f-filename repository)))
+  (format "%s/code-compass-%s/" code-compass-tmp-directory (code-compass--filename repository)))
 
 (defmacro code-compass--in-directory (directory &rest body)
   "Execute BODY in DIRECTORY.
@@ -368,7 +372,7 @@ Temporarily changes current buffer's default directory to DIRECTORY."
 Define optionally a BEFORE-DATE.
 The knowledge analysis allow to filter by AUTHORS when set."
   (interactive
-   (list (call-interactively 'code-compass-request-date)))
+   (list (call-interactively #'code-compass-request-date)))
   (message "Producing git report...")
   (let ((git-command
          (s-concat
@@ -408,7 +412,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
      (format
       "%1$s -l %4$s/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
       code-compass-code-maat-command
-      (f-filename repository)
+      (code-compass--filename repository)
       command
       (if maat-jar-p code-compass-tmp-directory code-compass-docker-data-directory))
      nil
@@ -499,7 +503,7 @@ This is just to not depend on a network connection."
 (defun code-compass--navigate-to-localhost (repository &optional port)
   "Navigate to served directory for REPOSITORY, optionally at specified PORT."
   (let ((port (or port code-compass-default-port))
-        (browse-url-browser-function 'browse-url-generic)
+        (browse-url-browser-function #'browse-url-generic)
         (browse-url-generic-program code-compass-preferred-browser))
     (browse-url (format "http://localhost:%s/zoomable.html" port)))
   repository)
@@ -538,7 +542,7 @@ Optional argument AUTHORS to filter AUTHORS for knowledge analysis."
       (setq code-compass-docker-data-directory ',code-compass-docker-data-directory)
       (setq code-compass-download-directory ',code-compass-download-directory)
       (setq code-compass-default-port ',code-compass-default-port)
-      (let ((browse-url-browser-function 'browse-url-generic)
+      (let ((browse-url-browser-function #'browse-url-generic)
             (browse-url-generic-program ,code-compass-preferred-browser))
         (if ,authors
             (funcall ',command ,repository ,date ',authors) ; TODO shouldn't pass authors like this, as it is only for knowledge analysis.
@@ -552,7 +556,7 @@ Optionally served at PORT."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)
+    (call-interactively #'code-compass-request-date)
     code-compass-default-port))
   (code-compass--in-temp-directory
    repository
@@ -574,8 +578,8 @@ PORT define where the html is served."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-hotspots-sync repository date port))
+    (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-hotspots-sync repository date port))
 (defalias 'c/show-hotspots 'code-compass-show-hotspots)
 
 (defun code-compass-show-hotspot-snapshot-sync (repository)
@@ -607,12 +611,12 @@ PORT define where the html is served."
   "Infer indentation level in LINES-WITHOUT-TEXT.
 If no indentation present in file, defaults to 2."
   (or (--> lines-without-text
-        (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
-        (let ((spaces-ind (-sort '< (--remove (eq 0 it) (-map 'code-compass--first it))))
-              (tabs-ind (-sort '< (--remove (eq 0 it) (-map 'code-compass--second it)))))
-          (if (> (length spaces-ind) (length tabs-ind))
-              (code-compass--first spaces-ind)
-            (code-compass--first tabs-ind))))
+           (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
+           (let ((spaces-ind (-sort #'< (--remove (eq 0 it) (-map 'code-compass--first it))))
+                 (tabs-ind (-sort #'< (--remove (eq 0 it) (-map 'code-compass--second it)))))
+             (if (> (length spaces-ind) (length tabs-ind))
+                 (code-compass--first spaces-ind)
+               (code-compass--first tabs-ind))))
       2))
 
 (defun code-compass--convert-tabs-to-spaces (line-without-text n)
@@ -709,7 +713,7 @@ Note this is the date of merging in, not of the code change."
 (defun code-compass--calculate-complexity-over-commits (file &optional opts)
   "Calculate complexity of FILE over commits.
 Optional argument OPTS defines things like the indentation to use."
-  (--> (call-interactively 'code-compass-request-date)
+  (--> (call-interactively #'code-compass-request-date)
        (code-compass--retrieve-commits-up-to-date-touching-file file it)
        (--map
         (--> it
@@ -753,7 +757,7 @@ Optionally give file indentation in OPTS."
   "Show how much code was added and removed from REPOSITORY from a DATE."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
+                (call-interactively #'code-compass-request-date)))
   (code-compass--in-temp-directory
    repository
    (--> repository
@@ -767,8 +771,8 @@ Optionally give file indentation in OPTS."
   "Show how much code was added and removed from REPOSITORY from a DATE."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-code-churn-sync repository date nil 't))
+                (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-code-churn-sync repository date nil 't))
 (defalias 'c/show-code-churn 'code-compass-show-code-churn)
 ;; END complexity over commits
 
@@ -809,7 +813,7 @@ Optionally give file indentation in OPTS."
 Serve graph on PORT."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)
+                (call-interactively #'code-compass-request-date)
                 8888))
   (code-compass--in-temp-directory
    repository
@@ -827,8 +831,8 @@ Serve graph on PORT."
   "Show REPOSITORY edge bundling for code coupling up to DATE. Serve graph on PORT."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-coupling-graph-sync repository date port))
+                (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-coupling-graph-sync repository date port))
 (defalias 'c/show-coupling-graph 'code-compass-show-coupling-graph)
 ;; END change coupling
 
@@ -969,7 +973,7 @@ Optionally set the PORT on which to serve the graph."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)
+    (call-interactively #'code-compass-request-date)
     8888))
   (code-compass--in-temp-directory
    repository
@@ -989,8 +993,8 @@ Optionally define PORT on which to serve graph."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-code-communication-sync repository date port))
+    (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-code-communication-sync repository date port))
 (defalias 'c/show-code-communication 'code-compass-show-code-communication)
 ;; END code communication
 
@@ -1054,7 +1058,7 @@ Optionally define PORT on which to serve graph."
   (interactive (let ((repository (read-directory-name "Choose git repository directory:" (vc-root-dir))))
                  (list
                   repository
-                  (call-interactively 'code-compass-request-date)
+                  (call-interactively #'code-compass-request-date)
                   (completing-read-multiple "Filter by authors (TAB-completion) or leave empty for all: " (code-compass--get-authors repository))
                   8888)))
   (code-compass--in-temp-directory
@@ -1080,10 +1084,10 @@ Optionally define PORT on which to serve graph."
   (interactive (let ((repository (read-directory-name "Choose git repository directory:" (vc-root-dir))))
                  (list
                   repository
-                  (call-interactively 'code-compass-request-date)
+                  (call-interactively #'code-compass-request-date)
                   (completing-read-multiple "Filter by authors (TAB-completion) or leave empty for all: " (code-compass--get-authors repository))
                   8888)))
-  (code-compass--async-run 'code-compass-show-knowledge-graph-sync repository date port nil authors))
+  (code-compass--async-run #'code-compass-show-knowledge-graph-sync repository date port nil authors))
 (defalias 'c/show-knowledge-graph 'code-compass-show-knowledge-graph)
 ;; END code knowledge
 
@@ -1118,7 +1122,7 @@ Optionally define PORT on which to serve graph."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)
+    (call-interactively #'code-compass-request-date)
     8888))
   (code-compass--in-temp-directory
    repository
@@ -1140,8 +1144,8 @@ Filter by DATE.
  Optionally define PORT on which to serve graph."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-refactoring-graph-sync repository date port))
+                (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-refactoring-graph-sync repository date port))
 (defalias 'c/show-refactoring-graph 'code-compass-show-refactoring-graph)
 ;; END code refactoring
 
@@ -1184,7 +1188,7 @@ Optionally define PORT on which to serve graph."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)
+    (call-interactively #'code-compass-request-date)
     8888))
   (code-compass--in-temp-directory
    repository
@@ -1205,8 +1209,8 @@ Filter by DATE.
  Optionally define PORT on which to serve graph."
   (interactive (list
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-code-age-sync repository date port))
+                (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-code-age-sync repository date port))
 (defalias 'c/show-stability-graph 'code-compass-show-stability-graph)
 ;; END code stability
 
@@ -1284,7 +1288,7 @@ Optional argument DATE to reduce time window."
 (defun code-compass-show-fragmentation (path)
   "Show knowledge fragmentation for PATH."
   (interactive "fShow fragmentation for:")
-  (code-compass--async-run 'code-compass-show-fragmentation-sync path nil nil 't))
+  (code-compass--async-run #'code-compass-show-fragmentation-sync path nil nil 't))
 (defalias 'c/show-fragmentation 'code-compass-show-fragmentation)
 ;; END code fragmentation
 
@@ -1460,7 +1464,7 @@ When ARG is set show only history for given file."
   (interactive
    (list
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
-    (call-interactively 'code-compass-request-date)))
+    (call-interactively #'code-compass-request-date)))
   (if (executable-find code-compass-gource-command)
       (async-shell-command
        (s-concat
@@ -1575,84 +1579,84 @@ We run `code-compass-show-hotspot-cluster-sync' from FILE."
            (--map (s-concat (file-name-directory file) "/" it) it)
            (--filter
             (and
-             (f-directory-p it)
-             (f-directory-p (concat it "/.git")))
+             (file-directory-p it)
+             (file-directory-p (concat it "/.git")))
             it)))))
 
 (defun code-compass--directory-git-p (directory)
   "Check if DIRECTORY is a Git repository."
   (and
-   (f-directory-p directory)
-   (f-directory-p (concat directory "/.git"))))
+   (file-directory-p directory)
+   (file-directory-p (concat directory "/.git"))))
 
 (defun code-compass--add-prepended-reports (directory)
-  "Prepend DIRECTORY to gitreport and revisions."
-  (copy-file "gitreport.log" (format "%s-gitreport.log" (f-filename directory)) 't)
-  (copy-file "revisions.csv" (format "%s-revisions.csv" (f-filename directory)) 't)
-  directory)
+"Prepend DIRECTORY to gitreport and revisions."
+(copy-file "gitreport.log" (format "%s-gitreport.log" (code-compass--filename directory)) 't)
+(copy-file "revisions.csv" (format "%s-revisions.csv" (code-compass--filename directory)) 't)
+directory)
 
 (defun code-compass-show-hotspot-cluster-sync (repository date &optional port)
-  "Show hotspot analysis for repositories in DIRECTORY.
+"Show hotspot analysis for repositories in DIRECTORY.
 Filter by DATE.
 If a file `repos-cluster.txt' exists with a list of repositories
 in the current REPOSITORY, this has priority over DIRECTORY."
-  (interactive
-   (list
-    (read-directory-name "Choose repositories directory:" ".")
-    (call-interactively 'code-compass-request-date)
-    8888))
-  (let* ((filepath (s-concat repository "/repos-cluster.txt"))
-         (directories
-          (or (code-compass--get-repositories-from-file filepath)
-              (-filter
-               #'code-compass--directory-git-p
-               (--remove
-                (or (s-ends-with? "/." it) (s-ends-with? "/.." it))
-                (directory-files repository 't)))))
-         (no-prefix-revisions-fn
-          (lambda (repo)
-            (code-compass--produce-code-maat-revisions-report repository)
-            repo)))
-    (message "Used directories: %s" directories)
-    (code-compass--in-temp-directory
-     repository
-     (code-compass--produce-cloc-report repository)
-     (--each directories
-       (--> it
-            (code-compass-produce-git-report it date)
-            (funcall no-prefix-revisions-fn it)
-            code-compass--add-prepended-reports
-            ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
-            (let* ((filename (f-filename it))
-                   (rev-file (s-concat filename "-revisions.csv")))
-              (--> rev-file
-                   (with-temp-buffer
-                     (insert-file-contents-literally it)
-                     (buffer-substring-no-properties (point-min) (point-max)))
-                   (s-split "\n" it 'omit-nulls)
-                   cdr
-                   (--map (concat filename "/" it) it)
-                   (s-join "\n" it)
-                   (format "%s\n" it)
-                   (write-region it nil rev-file)))))
-     (code-compass--in-temp-directory
-      repository
-      ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
-      (shell-command "cat *-revisions.csv | sed '/^[[:space:]]*$/d' > revisions.csv;")
-      (write-region
-       (concat
-        "entity,n-revs\n"
-        (with-temp-buffer
-          (insert-file-contents-literally "revisions.csv")
-          (buffer-substring-no-properties (point-min) (point-max))))
-       nil
-       "revisions.csv")
-      (--> repository
-           code-compass--generate-merger-script
-           code-compass--generate-d3-v3-lib
-           code-compass--produce-json
-           code-compass--generate-host-enclosure-diagram-html
-           (code-compass--run-server-and-navigate it port))))))
+(interactive
+ (list
+  (read-directory-name "Choose repositories directory:" ".")
+  (call-interactively #'code-compass-request-date)
+  8888))
+(let* ((filepath (s-concat repository "/repos-cluster.txt"))
+       (directories
+        (or (code-compass--get-repositories-from-file filepath)
+            (-filter
+             #'code-compass--directory-git-p
+             (--remove
+              (or (s-ends-with? "/." it) (s-ends-with? "/.." it))
+              (directory-files repository 't)))))
+       (no-prefix-revisions-fn
+        (lambda (repo)
+          (code-compass--produce-code-maat-revisions-report repository)
+          repo)))
+  (message "Used directories: %s" directories)
+  (code-compass--in-temp-directory
+   repository
+   (code-compass--produce-cloc-report repository)
+   (--each directories
+     (--> it
+          (code-compass-produce-git-report it date)
+          (funcall no-prefix-revisions-fn it)
+          code-compass--add-prepended-reports
+          ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
+          (let* ((filename (code-compass--filename it))
+                 (rev-file (s-concat filename "-revisions.csv")))
+            (--> rev-file
+                 (with-temp-buffer
+                   (insert-file-contents-literally it)
+                   (buffer-substring-no-properties (point-min) (point-max)))
+                 (s-split "\n" it 'omit-nulls)
+                 cdr
+                 (--map (concat filename "/" it) it)
+                 (s-join "\n" it)
+                 (format "%s\n" it)
+                 (write-region it nil rev-file)))))
+   (code-compass--in-temp-directory
+    repository
+    ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
+    (shell-command "cat *-revisions.csv | sed '/^[[:space:]]*$/d' > revisions.csv;")
+    (write-region
+     (concat
+      "entity,n-revs\n"
+      (with-temp-buffer
+        (insert-file-contents-literally "revisions.csv")
+        (buffer-substring-no-properties (point-min) (point-max))))
+     nil
+     "revisions.csv")
+    (--> repository
+         code-compass--generate-merger-script
+         code-compass--generate-d3-v3-lib
+         code-compass--produce-json
+         code-compass--generate-host-enclosure-diagram-html
+         (code-compass--run-server-and-navigate it port))))))
 (defalias 'c/show-hotspot-cluster-sync 'code-compass-show-hotspot-cluster-sync)
 
 (defun code-compass-show-hotspot-cluster (directory date &optional port)
@@ -1662,8 +1666,8 @@ Starting DATE reduces scope of Git log.
   (interactive
    (list
     (read-directory-name "Choose repositories directory:" ".")
-    (call-interactively 'code-compass-request-date)))
-  (code-compass--async-run 'code-compass-show-hotspot-cluster-sync directory date port))
+    (call-interactively #'code-compass-request-date)))
+  (code-compass--async-run #'code-compass-show-hotspot-cluster-sync directory date port))
 (defalias 'c/show-hotspot-cluster 'code-compass-show-hotspot-cluster)
 
 ;; END Hotspots for microservices
@@ -1755,7 +1759,7 @@ Argument ANALYSIS sets the anylysis command to run."
                 (completing-read "Analysis:"
                                  '("authors" "revisions" "coupling" "soc" "summary" "identity" "abs-churn" "author-churn" "entity-churn" "entity-ownership" "main-dev" "refactoring-main-dev" "entity-effort" "main-dev-by-revs" "fragmentation" "communication" "messages" "age"))
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
-                (call-interactively 'code-compass-request-date)))
+                (call-interactively #'code-compass-request-date)))
   (code-compass--in-temp-directory
    repository
    (--> repository
