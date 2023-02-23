@@ -4,7 +4,7 @@
 
 ;; Author: Andrea <andrea-dev@hotmail.com>
 ;; Version: 0.1.3
-;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1") url)
+;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1") url vc)
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
 
@@ -40,7 +40,7 @@
 (require 'simple-httpd)
 (require 'async)
 (require 'url)
-
+(require 'vc)
 
 (defgroup code-compass nil
   "Options specific to code-compass."
@@ -317,7 +317,7 @@ Optionally give TIME from which to start."
 
 (defun code-compass-request-date (days|months &optional time)
   "Request date in days or months by asking how many DAYS|MONTHS ago.
- Optionally give TIME from which to start."
+Optionally give TIME from which to start."
   (interactive
    (list (completing-read "From how long ago? " code-compass-default-periods)))
   (when (not (string= days|months "beginning"))
@@ -392,11 +392,10 @@ The knowledge analysis allow to filter by AUTHORS when set."
      git-command
      nil
      (get-buffer-create "*code-compass-produce-git-report-errors*")))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass-produce-git-report-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass-produce-git-report-errors\n\n" contents)))
+  (let ((contents
+         (with-current-buffer "*code-compass-produce-git-report-errors*"
+           (buffer-string))))
+    (when (error (concat "code-compass-produce-git-report-errors\n\n" contents))))
   repository)
 (defalias 'c/produce-git-report 'code-compass-produce-git-report)
 
@@ -420,7 +419,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
     (if-let* ((contents
                (with-current-buffer "*code-compass--run-code-maat-errors*"
                  (buffer-string)))
-              (_ (> (length contents) 1)))
+              (_ (length> contents 1)))
         (error (concat "code-compass--run-code-maat\n\n" contents)))))
 
 (defun code-compass--produce-code-maat-revisions-report (repository)
@@ -695,14 +694,12 @@ code can infer it automatically."
 
 (defun code-compass--retrieve-file-at-commit-with-git (file commit)
   "Retrieve FILE contents at COMMIT."
-  (let ((git-file
-         (s-join
-          "/"
-          (cdr
-           (--drop-while
-            (not
-             (string= it (code-compass--third (reverse (s-split "/" (magit-git-dir))))))
-            (s-split "/" file))))))
+  (let* ((git-dir (with-current-buffer (find-file-noselect file)
+                    (vc-root-dir)))
+         (git-file
+          (string-remove-prefix
+           git-dir
+           (expand-file-name file))))
     (shell-command-to-string (format "git show %s:\"%s\"" commit git-file))))
 
 (defun code-compass--git-hash-to-date (commit)
@@ -741,7 +738,9 @@ Optionally give file indentation in OPTS."
   (interactive (list (read-file-name "Select file:" nil nil nil (buffer-file-name))))
   (code-compass--plot-lines-with-graph-cli
    (--map
-    (list (code-compass--git-hash-to-date (code-compass--first it)) (alist-get 'total (code-compass--second it)) (alist-get 'n-lines (code-compass--second it)))
+    (list (code-compass--git-hash-to-date (code-compass--first it))
+          (alist-get 'total (code-compass--second it))
+          (alist-get 'n-lines (code-compass--second it)))
     (code-compass--calculate-complexity-over-commits file opts))))
 (defalias 'c/show-complexity-over-commits 'code-compass-show-complexity-over-commits)
 
@@ -1545,16 +1544,17 @@ When ARG is set show only history for given file."
 
 (defun code-compass--open-slack-from-email (email)
   "Open slack chat from EMAIL."
-  (slack-buffer-display-im
-   (slack-create-user-profile-buffer
-    slack-current-team
-    (plist-get ;; TODO fall back to manual choice if the mail cannot be found?
-     (--find
-      (string=
-       email
-       (plist-get (plist-get it :profile) :email))
-      (slack-team-users slack-current-team))
-     :id))))
+  (when (and (fboundp 'slack) slack-current-team)
+    (slack-buffer-display-im
+     (slack-create-user-profile-buffer
+      slack-current-team
+      (plist-get ;; TODO fall back to manual choice if the mail cannot be found?
+       (--find
+        (string=
+         email
+         (plist-get (plist-get it :profile) :email))
+        (slack-team-users slack-current-team))
+       :id)))))
 
 (defun code-compass-slack-main-contributor ()
   "Open slack chat with main contributor of file."
