@@ -682,7 +682,7 @@ code can infer it automatically."
 (defun code-compass--retrieve-file-at-commit-with-git (file commit)
   "Retrieve FILE contents at COMMIT."
   (let* ((git-dir (with-current-buffer (find-file-noselect file)
-                    (vc-root-dir)))
+                    (expand-file-name (vc-root-dir))))
          (git-file
           (string-remove-prefix
            git-dir
