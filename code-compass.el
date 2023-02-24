@@ -367,6 +367,18 @@ Temporarily changes current buffer's default directory to DIRECTORY."
       (code-compass--temp-dir ,repository)
       ,@body)))
 
+(defun code-compass--shell-command-failing-on-error (command buffer-name)
+  "Run COMMAND with `shell-command' but check if errors are output in BUFFER-NAME."
+  (ignore-errors (kill-buffer buffer-name))
+  (shell-command
+   command
+   nil
+   (get-buffer-create buffer-name))
+  (let ((contents
+         (with-current-buffer buffer-name
+           (buffer-string))))
+    (when (length> contents 1) (error (concat buffer-name "\n\n" contents)))))
+
 (defun code-compass-produce-git-report (repository date &optional before-date authors)
   "Create git report for REPOSITORY with a Git log starting at DATE.
 Define optionally a BEFORE-DATE.
@@ -388,14 +400,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
             (s-join " "  (--map (format "':(exclude)%s'" it) code-compass-exclude-directories)))
           " > gitreport.log")))
     (message "Running %s" git-command)
-    (shell-command
-     git-command
-     nil
-     (get-buffer-create "*code-compass-produce-git-report-errors*")))
-  (let ((contents
-         (with-current-buffer "*code-compass-produce-git-report-errors*"
-           (buffer-string))))
-    (when (error (concat "code-compass-produce-git-report-errors\n\n" contents))))
+    (code-compass--shell-command-failing-on-error git-command "*code-compass-produce-git-report-errors*"))
   repository)
 (defalias 'c/produce-git-report 'code-compass-produce-git-report)
 
@@ -407,20 +412,14 @@ The knowledge analysis allow to filter by AUTHORS when set."
     (when (and maat-jar-p (not (file-exists-p (code-compass--expand-file-name source-file))))
       (mkdir code-compass-download-directory t)
       (url-copy-file "https://github.com/smontanari/code-forensics/raw/v3.0.0/lib/analysers/code_maat/code-maat-1.0.1-standalone.jar" (code-compass--expand-file-name source-file) t))
-    (shell-command
+    (code-compass--shell-command-failing-on-error
      (format
       "%1$s -l %4$s/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
       code-compass-code-maat-command
       (code-compass--filename repository)
       command
       (if maat-jar-p code-compass-tmp-directory code-compass-docker-data-directory))
-     nil
-     (get-buffer-create "*code-compass--run-code-maat-errors*"))
-    (if-let* ((contents
-               (with-current-buffer "*code-compass--run-code-maat-errors*"
-                 (buffer-string)))
-              (_ (length> contents 1)))
-        (error (concat "code-compass--run-code-maat\n\n" contents)))))
+     "*code-compass--run-code-maat-errors*")))
 
 (defun code-compass--produce-code-maat-revisions-report (repository)
   "Create code-maat revisions report for REPOSITORY."
@@ -435,15 +434,9 @@ edit the variable `code-compass-exclude-directories'."
             "Producing cloc report with "
             (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
             "..."))
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
-   nil
-   (get-buffer-create "*code-compass--produce-cloc-report-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-cloc-report-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-cloc-report*\n\n" contents)))
+   "*code-compass--produce-cloc-report-errors*")
   repository)
 
 (defun code-compass--copy-file (file-name directory)
@@ -481,16 +474,10 @@ This is just to not depend on a network connection."
 (defun code-compass--produce-json (repository)
   "Produce json for REPOSITORY."
   (message "Produce json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json"
-   nil
-   (get-buffer-create "*code-compass--produce-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-json\n\n" contents))
-    repository))
+   "*code-compass--produce-json-errors*")
+  repository)
 
 (defun code-compass--generate-host-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
@@ -789,16 +776,10 @@ Optionally give file indentation in OPTS."
 (defun code-compass--produce-coupling-json (repository)
   "Produce coupling json needed by d3 for REPOSITORY."
   (message "Produce coupling json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json"
-   nil
-   (get-buffer-create "*code-compass--produce-coupling-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-coupling-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-coupling-json\n\n" contents))
-    repository))
+   "*code-compass--produce-coupling-json-errors*")
+  repository)
 
 (defun code-compass--generate-host-edge-bundling-html (repository)
   "Generate host html from REPOSITORY."
@@ -954,16 +935,10 @@ Serve graph on PORT."
 (defun code-compass--produce-communication-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json"
-   nil
-   (get-buffer-create "*code-compass--produce-communication-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-communication-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-communication-json\n\n" contents))
-    repository))
+   "*code-compass--produce-communication-json-errors*")
+  repository)
 
 (defun code-compass-show-code-communication-sync (repository date &optional port)
   "Show REPOSITORY edge bundling for code communication from DATE.
@@ -1012,16 +987,10 @@ Argument REPOSITORY defines for which repo to run this."
 (defun code-compass--produce-knowledge-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce knowledge json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json"
-   nil
-   (get-buffer-create "*code-compass--produce-knowledge-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-knowledge-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-knowledge-json\n\n" contents))
-    repository))
+   "*code-compass--produce-knowledge-json-errors*")
+  repository)
 
 (defun code-compass--insert-authors-colors-in-file (authors-colors repository)
   "Insert a csv of AUTHORS-COLORS in the temporary asset directory for REPOSITORY."
@@ -1104,16 +1073,10 @@ Optionally define PORT on which to serve graph."
 (defun code-compass--produce-refactoring-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce refactoring json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json" ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
-   nil
-   (get-buffer-create "*code-compass--produce-refactoring-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-refactoring-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "c/produce-refactoring\n\n" contents))
-    repository))
+   "*code-compass--produce-refactoring-json-errors*")
+  repository)
 
 (defun code-compass-show-refactoring-graph-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge up to DATE.
@@ -1162,16 +1125,10 @@ Filter by DATE.
 (defun code-compass--produce-age-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
-  (shell-command
+  (code-compass--shell-command-failing-on-error
    "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json"
-   nil
-   (get-buffer-create "*code-compass--produce-age-json-errors*"))
-  (if-let* ((contents
-             (with-current-buffer "*code-compass--produce-age-json-errors*"
-               (buffer-string)))
-            (_ (> (length contents) 1)))
-      (error (concat "code-compass--produce-age-json\n\n" contents))
-    repository))
+   "*code-compass--produce-age-json-errors*")
+  repository)
 
 (defun code-compass--generate-host-age-enclosure-diagram-html (repository)
   "Generate host html from REPOSITORY."
@@ -1273,15 +1230,9 @@ Optional argument DATE to reduce time window."
           (cons "author,+&-lines\n" it)
           (with-temp-file "fragmentation.csv"
             (apply 'insert it)))
-     (shell-command
+     (code-compass--shell-command-failing-on-error
       (code-compass--show-pie-chart-command "fragmentation.csv")
-      nil
-      (get-buffer-create "*code-compass-show-fragmentation-sync-errors*"))
-     (if-let* ((contents
-                (with-current-buffer "*code-compass-show-fragmentation-sync-errors*"
-                  (buffer-string)))
-               (_ (> (length contents) 1)))
-         (error (concat "code-compass-show-fragmentation-sync\n\n" contents))))))
+      "*code-compass-show-fragmentation-sync-errors*"))))
 (defalias 'c/show-fragmentation-sync 'code-compass-show-fragmentation-sync)
 
 (defun code-compass-show-fragmentation (path)
