@@ -929,9 +929,11 @@ For now, all other version control will error out until support is added."
     identifier))
 
 (defun code-compass-clear-coupling-project-map ()
-  "Clear `code-compass-coupling-project-map'."
+  "Clear `code-compass-coupling-project-map' and deletes cache file."
   (interactive)
-  (clrhash code-compass-coupling-project-map))
+  (clrhash code-compass-coupling-project-map)
+
+  (delete-file (code-compass--cache-file)))
 (defalias 'c/clear-coupling-project-map 'code-compass-clear-coupling-project-map)
 
 (defun code-compass-get-coupled-files-alist-hook-fn ()
