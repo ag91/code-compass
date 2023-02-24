@@ -888,7 +888,9 @@ Serve graph on PORT."
 (defun code-compass--get-coupled-files-alist (repository fun)
   "Run FUN on the coupled files for REPOSITORY."
   (let* ((key (funcall code-compass-calculate-coupling-project-key-fn repository))
-         (code-compass-files (gethash key code-compass-coupling-project-map)))
+         (code-compass-files (gethash key code-compass-coupling-project-map))
+         (cache-file (code-compass--cache-file)))
+
     (if code-compass-files
         (funcall fun code-compass-files)
       (progn
@@ -898,11 +900,10 @@ Serve graph on PORT."
          `(lambda (result-files)
             (message "Coupling Cache Built")
             (puthash ,key result-files code-compass-coupling-project-map)
-            (funcall ,fun result-files))))))
-
-  ;; Save cache to local storage to access it faster next time if nothing has changed
-  (with-temp-file (code-compass--cache-file)
-    (prin1 code-compass-coupling-project-map (current-buffer))))
+            (funcall ,fun result-files)
+            ;; Save cache to local storage to access it faster next time if nothing has changed
+            (with-temp-file ,cache-file
+              (prin1 code-compass-coupling-project-map (current-buffer)))))))))
 
 (defun code-compass--cache-file ()
   "Return the file path of where the hash table can/is stored"
@@ -971,18 +972,16 @@ For now, all other version control will error out until support is added."
   (interactive)
 
   (let ((cache-file (code-compass--cache-file)))
-    (if (file-exists-p cache-file)
-        ;; load cache if it exists
-        (progn (message "Loading coupled files from cache...")
-               (with-temp-buffer
-                 (insert-file-contents cache-file)
-                 (goto-char (point-min))
-                 (set 'code-compass-coupling-project-map (read (current-buffer))))
-               (message "Done loading coupled files from cache."))
-      ;; Else calculate on the fly
-      (code-compass--get-coupled-files-alist
-       (vc-root-dir)
-       `(lambda (files) (code-compass--show-coupled-files files ,(buffer-file-name)))))))
+    ;; load cache if it exists
+    (when (file-exists-p cache-file)
+      (with-temp-buffer
+        (insert-file-contents cache-file)
+        (goto-char (point-min))
+        (set 'code-compass-coupling-project-map (read (current-buffer))))))
+
+  (code-compass--get-coupled-files-alist
+   (vc-root-dir)
+   `(lambda (files) (code-compass--show-coupled-files files ,(buffer-file-name)))))
 
 (defalias 'c/find-coupled-files 'code-compass-find-coupled-files)
 ;; END find coupled files
