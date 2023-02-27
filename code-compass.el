@@ -309,8 +309,7 @@ A pointing up icon means the code has been growing,
       (insert (format "- Gource: %s\n" (if gource-p "OK" "MISSING")))
       (read-only-mode))
     (switch-to-buffer-other-window doctor-buffer)))
-(defalias 'c/doctor 'code-compass-doctor)
-
+(defalias 'c/doctor #'code-compass-doctor)
 
 (defun code-compass--subtract-to-now (n month|day &optional time)
   "Subtract N * MONTH|DAY to current time.
@@ -326,7 +325,7 @@ Optionally give TIME from which to start."
    (list (completing-read "From how long ago? " code-compass-default-periods)))
   (when (not (string= days|months "beginning"))
     (format-time-string
-     "%Y-%m-%d"
+     "%F"
      (apply
       'code-compass--subtract-to-now
       (-concat
@@ -334,7 +333,7 @@ Optionally give TIME from which to start."
            (list (string-to-number (s-replace "m" "" days|months)) (* 24 31))
          (list (string-to-number (s-replace "d" "" days|months)) 24))
        (list time))))))
-(defalias 'c/request-date 'code-compass-request-date)
+(defalias 'c/request-date #'code-compass-request-date)
 
 (defun code-compass--first (l)
   "Get first element of L."
@@ -406,7 +405,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
     (message "Running %s" git-command)
     (code-compass--shell-command-failing-on-error git-command "*code-compass-produce-git-report-errors*"))
   repository)
-(defalias 'c/produce-git-report 'code-compass-produce-git-report)
+(defalias 'c/produce-git-report #'code-compass-produce-git-report)
 
 (defun code-compass--run-code-maat (command repository)
   "Run code-maat's COMMAND on REPOSITORY."
@@ -559,7 +558,7 @@ Optionally served at PORT."
         code-compass--produce-json
         code-compass--generate-host-enclosure-diagram-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-hotspots-sync 'code-compass-show-hotspots-sync)
+(defalias 'c/show-hotspots-sync #'code-compass-show-hotspots-sync)
 
 (defun code-compass-show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots.
@@ -570,7 +569,7 @@ PORT define where the html is served."
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-hotspots-sync repository date port))
-(defalias 'c/show-hotspots 'code-compass-show-hotspots)
+(defalias 'c/show-hotspots #'code-compass-show-hotspots)
 
 (defun code-compass-show-hotspot-snapshot-sync (repository)
   "Snapshot COMMAND over REPOSITORY over the last year every three months."
@@ -579,7 +578,7 @@ PORT define where the html is served."
     (read-directory-name "Choose git repository directory:" (vc-root-dir))))
   (--each code-compass-snapshot-periods (code-compass-show-hotspots-sync repository (code-compass-request-date it) code-compass-default-port)))
 
-(defalias 'c/show-hotspot-snapshot-sync 'code-compass-show-hotspot-snapshot-sync)
+(defalias 'c/show-hotspot-snapshot-sync #'code-compass-show-hotspot-snapshot-sync)
 
 ;; BEGIN indentation
 
@@ -594,7 +593,7 @@ PORT define where the html is served."
 (defun code-compass--remove-text-after-indentation (lines)
   "Remove text in LINES."
   (--map
-   (apply 'string (--take-while (or (eq ?\s  it) (eq ?\t it)) (string-to-list it)))
+   (apply #'string (--take-while (or (eq ?\s  it) (eq ?\t it)) (string-to-list it)))
    lines))
 
 (defun code-compass--find-indentation (lines-without-text)
@@ -654,7 +653,7 @@ Return nil for empty CODE."
          code-compass--remove-text-after-indentation
          (code-compass--as-logical-indents it opts)
          code-compass--stats-from)))
-(defalias 'c/calculate-complexity-stats 'code-compass-calculate-complexity-stats)
+(defalias 'c/calculate-complexity-stats #'code-compass-calculate-complexity-stats)
 
 (defun code-compass-calculate-complexity-current-buffer (&optional indentation)
   "Calculate complexity of the current buffer contents.
@@ -665,7 +664,7 @@ code can infer it automatically."
            (code-compass-calculate-complexity-stats
             (buffer-substring-no-properties (point-min) (point-max)) indentation)))
 
-(defalias 'c/calculate-complexity-current-buffer 'code-compass-calculate-complexity-current-buffer)
+(defalias 'c/calculate-complexity-current-buffer #'code-compass-calculate-complexity-current-buffer)
 
 ;; END indentation
 
@@ -708,7 +707,7 @@ Optional argument OPTS defines things like the indentation to use."
              (list it (code-compass--retrieve-file-at-commit-with-git file it))
              (list (code-compass--first it) (code-compass-calculate-complexity-stats (code-compass--second it) opts)))
         it)))
-(defalias 'c/calculate-complexity-over-commits 'code-compass--calculate-complexity-over-commits)
+(defalias 'c/calculate-complexity-over-commits #'code-compass--calculate-complexity-over-commits)
 
 (defun code-compass--plot-csv-file-with-graph-cli (file)
   "Plot CSV FILE with graph-cli."
@@ -733,7 +732,7 @@ Optionally give file indentation in OPTS."
           (alist-get 'total (code-compass--second it))
           (alist-get 'n-lines (code-compass--second it)))
     (code-compass--calculate-complexity-over-commits file opts))))
-(defalias 'c/show-complexity-over-commits 'code-compass-show-complexity-over-commits)
+(defalias 'c/show-complexity-over-commits #'code-compass-show-complexity-over-commits)
 
 ;; END complexity over commits
 
@@ -755,7 +754,7 @@ Optionally give file indentation in OPTS."
         code-compass--produce-code-maat-abs-churn-report
         "abs-churn.csv"
         code-compass--plot-csv-file-with-graph-cli)))
-(defalias 'c/show-code-churn-sync 'code-compass-show-code-churn-sync)
+(defalias 'c/show-code-churn-sync #'code-compass-show-code-churn-sync)
 
 (defun code-compass-show-code-churn (repository date)
   "Show how much code was added and removed from REPOSITORY from a DATE."
@@ -763,7 +762,7 @@ Optionally give file indentation in OPTS."
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-code-churn-sync repository date nil 't))
-(defalias 'c/show-code-churn 'code-compass-show-code-churn)
+(defalias 'c/show-code-churn #'code-compass-show-code-churn)
 ;; END complexity over commits
 
 ;; BEGIN change coupling
@@ -809,7 +808,7 @@ Serve graph on PORT."
         code-compass--produce-coupling-json
         code-compass--generate-host-edge-bundling-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-coupling-graph-sync 'code-compass-show-coupling-graph-sync)
+(defalias 'c/show-coupling-graph-sync #'code-compass-show-coupling-graph-sync)
 
 (defun code-compass-show-coupling-graph (repository date &optional port)
   "Show REPOSITORY edge bundling for code coupling up to DATE. Serve graph on PORT."
@@ -817,7 +816,7 @@ Serve graph on PORT."
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-coupling-graph-sync repository date port))
-(defalias 'c/show-coupling-graph 'code-compass-show-coupling-graph)
+(defalias 'c/show-coupling-graph #'code-compass-show-coupling-graph)
 ;; END change coupling
 
 ;; BEGIN find coupled files
@@ -886,7 +885,7 @@ Serve graph on PORT."
               (prin1 code-compass-coupling-project-map (current-buffer)))))))))
 
 (defun code-compass--cache-file ()
-  "Return the file path of where the hash table can/is stored"
+  "Return the file path of where the hash table can/is stored."
   ;; Create directory if it does not exist
   (unless (file-exists-p code-compass-cache-directory)
     (make-directory code-compass-cache-directory))
@@ -905,7 +904,7 @@ For now, all other version control will error out until support is added."
      ((eq backend 'Git)
       (setq identifier (s-trim (shell-command-to-string "git rev-parse --short HEAD"))))
      (t
-      (error (format "Your backend '%s' is not supported" backend))))
+      (error "Your backend '%s' is not supported" backend)))
 
     identifier))
 
@@ -915,7 +914,7 @@ For now, all other version control will error out until support is added."
   (clrhash code-compass-coupling-project-map)
 
   (delete-file (code-compass--cache-file)))
-(defalias 'c/clear-coupling-project-map 'code-compass-clear-coupling-project-map)
+(defalias 'c/clear-coupling-project-map #'code-compass-clear-coupling-project-map)
 
 (defun code-compass-get-coupled-files-alist-hook-fn ()
   "Calculate coupled files asynchronously."
@@ -928,7 +927,7 @@ For now, all other version control will error out until support is added."
            "Finished to update coupled files for %s and found %s coupled files."
            ,git-root
            (length x)))))))
-(defalias 'c/get-coupled-files-alist-hook-fn 'code-compass-get-coupled-files-alist-hook-fn)
+(defalias 'c/get-coupled-files-alist-hook-fn #'code-compass-get-coupled-files-alist-hook-fn)
 
 (defun code-compass--show-coupled-files (files file-name)
   "Gather coupled files to FILE-NAME from all FILES."
@@ -963,7 +962,7 @@ For now, all other version control will error out until support is added."
    (vc-root-dir)
    `(lambda (files) (code-compass--show-coupled-files files ,(buffer-file-name)))))
 
-(defalias 'c/find-coupled-files 'code-compass-find-coupled-files)
+(defalias 'c/find-coupled-files #'code-compass-find-coupled-files)
 ;; END find coupled files
 
 ;; BEGIN code communication
@@ -1004,7 +1003,7 @@ Optionally set the PORT on which to serve the graph."
         code-compass--produce-communication-json
         code-compass--generate-host-edge-bundling-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-code-communication-sync 'code-compass-show-code-communication-sync)
+(defalias 'c/show-code-communication-sync #'code-compass-show-code-communication-sync)
 
 (defun code-compass-show-code-communication (repository date &optional port)
   "Show REPOSITORY edge bundling for code communication from DATE.
@@ -1014,7 +1013,7 @@ Optionally define PORT on which to serve graph."
     (read-directory-name "Choose git repository directory:" (vc-root-dir))
     (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-code-communication-sync repository date port))
-(defalias 'c/show-code-communication 'code-compass-show-code-communication)
+(defalias 'c/show-code-communication #'code-compass-show-code-communication)
 ;; END code communication
 
 ;; BEGIN code knowledge
@@ -1037,11 +1036,11 @@ Argument REPOSITORY defines for which repo to run this."
    "*code-compass--produce-knowledge-json-errors*")
   repository)
 
-(defun code-compass--insert-authors-colors-in-file (authors-colors repository)
+(defun code-compass--insert-authors-colors-in-file (authors-colors)
   "Insert a csv of AUTHORS-COLORS in the temporary asset directory for REPOSITORY."
   (with-temp-file "authors.csv"
     (insert "author,color\n")
-    (apply 'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
+    (apply #'insert (--map (s-concat (car it) "," (cdr it) "\n") authors-colors))))
 
 (defun code-compass--get-authors (repository)
   "Retrieve authors in REPOSITORY."
@@ -1054,7 +1053,7 @@ Argument REPOSITORY defines for which repo to run this."
   "Generate list of authors of REPOSITORY."
   (--> (code-compass--get-authors repository)
        (-zip it code-compass-authors-colors)
-       (code-compass--insert-authors-colors-in-file it repository))
+       (code-compass--insert-authors-colors-in-file it))
   repository)
 
 (defun code-compass--generate-host-knowledge-enclosure-diagram-html (repository)
@@ -1088,7 +1087,7 @@ Optionally define PORT on which to serve graph."
         code-compass--produce-knowledge-json
         code-compass--generate-host-knowledge-enclosure-diagram-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-knowledge-graph-sync 'code-compass-show-knowledge-graph-sync)
+(defalias 'c/show-knowledge-graph-sync #'code-compass-show-knowledge-graph-sync)
 
 (defun code-compass-show-knowledge-graph (repository date authors &optional port)
   "Show REPOSITORY enclosure diagram for code knowledge.
@@ -1101,7 +1100,7 @@ Optionally define PORT on which to serve graph."
                   (completing-read-multiple "Filter by authors (TAB-completion) or leave empty for all: " (code-compass--get-authors repository))
                   8888)))
   (code-compass--async-run #'code-compass-show-knowledge-graph-sync repository date port nil authors))
-(defalias 'c/show-knowledge-graph 'code-compass-show-knowledge-graph)
+(defalias 'c/show-knowledge-graph #'code-compass-show-knowledge-graph)
 ;; END code knowledge
 
 ;; BEGIN code refactoring
@@ -1143,7 +1142,7 @@ Optionally define PORT on which to serve graph."
         code-compass--produce-refactoring-json
         code-compass--generate-host-knowledge-enclosure-diagram-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-refactoring-graph-sync 'code-compass-show-refactoring-graph-sync)
+(defalias 'c/show-refactoring-graph-sync #'code-compass-show-refactoring-graph-sync)
 
 (defun code-compass-show-refactoring-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code refactoring.
@@ -1153,7 +1152,7 @@ Filter by DATE.
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-refactoring-graph-sync repository date port))
-(defalias 'c/show-refactoring-graph 'code-compass-show-refactoring-graph)
+(defalias 'c/show-refactoring-graph #'code-compass-show-refactoring-graph)
 ;; END code refactoring
 
 ;; BEGIN code stability
@@ -1202,7 +1201,7 @@ Optionally define PORT on which to serve graph."
         code-compass--produce-age-json
         code-compass--generate-host-age-enclosure-diagram-html
         (code-compass--run-server-and-navigate it port))))
-(defalias 'c/show-code-age-sync 'code-compass-show-code-age-sync)
+(defalias 'c/show-code-age-sync #'code-compass-show-code-age-sync)
 
 (defun code-compass-show-stability-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code stability.
@@ -1212,7 +1211,7 @@ Filter by DATE.
                 (read-directory-name "Choose git repository directory:" (vc-root-dir))
                 (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-code-age-sync repository date port))
-(defalias 'c/show-stability-graph 'code-compass-show-stability-graph)
+(defalias 'c/show-stability-graph #'code-compass-show-stability-graph)
 ;; END code stability
 
 ;; BEGIN code fragmentation
@@ -1274,17 +1273,17 @@ Optional argument DATE to reduce time window."
            it)
           (cons "author,+&-lines\n" it)
           (with-temp-file "fragmentation.csv"
-            (apply 'insert it)))
+            (apply #'insert it)))
      (code-compass--shell-command-failing-on-error
       (code-compass--show-pie-chart-command "fragmentation.csv")
       "*code-compass-show-fragmentation-sync-errors*"))))
-(defalias 'c/show-fragmentation-sync 'code-compass-show-fragmentation-sync)
+(defalias 'c/show-fragmentation-sync #'code-compass-show-fragmentation-sync)
 
 (defun code-compass-show-fragmentation (path)
   "Show knowledge fragmentation for PATH."
   (interactive "fShow fragmentation for:")
   (code-compass--async-run #'code-compass-show-fragmentation-sync path nil nil 't))
-(defalias 'c/show-fragmentation 'code-compass-show-fragmentation)
+(defalias 'c/show-fragmentation #'code-compass-show-fragmentation)
 ;; END code fragmentation
 
 ;; BEGIN word analysis
@@ -1331,7 +1330,7 @@ Optionally sorting the table according to ORDER-FN."
     (--filter (> (length (car it)) 2) it)
     (sort it (or order-fn (lambda (a b) (> (cdr a) (cdr b)))))
     (--map (format "'%s',%d\n" (car it) (cdr it)) it)
-    (apply 's-concat it)
+    (apply #'s-concat it)
     (s-concat "word,occurences\n\n" it)))
 
 (defun code-compass-word-statistics (string &optional order-fn)
@@ -1345,7 +1344,7 @@ Optionally define ORDER-FN
     (insert (code-compass--word-stats-to-csv-string string order-fn)))
   (pop-to-buffer "*word-statistics*")
   (goto-char (point-min)))
-(defalias 'c/word-statistics 'code-compass-word-statistics)
+(defalias 'c/word-statistics #'code-compass-word-statistics)
 
 (defun code-compass-word-semantics (string)
   "Produce a buffer with the words least used.
@@ -1353,7 +1352,7 @@ This could contain the most semantically relevant from STRING."
   (interactive
    (list (buffer-substring-no-properties (point-min) (point-max))))
   (code-compass-word-statistics string (lambda (a b) (< (cdr a) (cdr b)))))
-(defalias 'c/word-semantics 'code-compass-word-semantics)
+(defalias 'c/word-semantics #'code-compass-word-semantics)
 
 (defun code-compass-word-analysis-commits (arg)
   "Show the frequency of words used in commits messages.
@@ -1363,7 +1362,7 @@ When ARG is set show only history for given file."
                                  "git log --pretty=format:\"%s\""
                                  (when arg (format " %s" (read-file-name "Analyze history of:")))))
        code-compass-word-statistics))
-(defalias 'c/word-analysis-commits 'code-compass-word-analysis-commits)
+(defalias 'c/word-analysis-commits #'code-compass-word-analysis-commits)
 
 (defun code-compass-word-analysis-region ()
   "Show the frequency of words in a region."
@@ -1371,7 +1370,7 @@ When ARG is set show only history for given file."
   (when (region-active-p)
     (--> (buffer-substring-no-properties (region-beginning) (region-end))
          code-compass-word-statistics)))
-(defalias 'c/word-analysis-region 'code-compass-word-analysis-region)
+(defalias 'c/word-analysis-region #'code-compass-word-analysis-region)
 
 (defun code-compass-word-analysis-region-graph ()
   "Show the frequency graph for words in region."
@@ -1382,7 +1381,7 @@ When ARG is set show only history for given file."
          (with-temp-file (format "%s/word-stats.csv" code-compass-tmp-directory)
            (insert it))
          (shell-command (format "graph --bar --xtick-angle 90 %s/word-stats.csv" code-compass-tmp-directory)))))
-(defalias 'c/word-analysis-region-graph 'code-compass-word-analysis-region-graph)
+(defalias 'c/word-analysis-region-graph #'code-compass-word-analysis-region-graph)
 
 
 ;; END word analysis
@@ -1450,7 +1449,12 @@ When ARG is set show only history for given file."
   "Display icon function for `prog-mode-hook'."
   (run-with-timer 0.1 nil 'code-compass--display-icon))
 
-(add-hook 'prog-mode-hook 'code-compass--display-icon-delayed)
+(defun code-compass-toggle-churn-status-icon ()
+  "Enable churn status icon."
+  (interactive)
+  (if (-contains-p prog-mode-hook #'code-compass--display-icon-delayed)
+      (remove-hook 'prog-mode-hook #'code-compass--display-icon-delayed)
+    (add-hook 'prog-mode-hook #'code-compass--display-icon-delayed)))
 ;; END churn icon
 ;; BEGIN wrapper gource
 
@@ -1466,7 +1470,7 @@ When ARG is set show only history for given file."
         (format "cd %s; %s -seconds-per-day %s" repository code-compass-gource-command code-compass-gource-seconds-per-day)
         (when date (format " --start-date %s" date))))
     (message (format "Sorry, cannot find executable (%s). Try change the value of `code-compass-gource-command'" code-compass-gource-command))))
-(defalias 'c/show-gource 'code-compass-show-gource)
+(defalias 'c/show-gource #'code-compass-show-gource)
 ;; END wrapper gource
 
 
@@ -1520,7 +1524,7 @@ When ARG is set show only history for given file."
          ,create-todos
          files
          ,(or file (file-truename (or file (buffer-file-name)))))))))
-(defalias 'c/create-todos-from-coupled-files 'code-compass-create-todos-from-coupled-files)
+(defalias 'c/create-todos-from-coupled-files #'code-compass-create-todos-from-coupled-files)
 ;; END create todos for a coupled files
 
 ;; BEGIN EXPERIMENTAL slack support
@@ -1559,7 +1563,7 @@ When ARG is set show only history for given file."
   (if (and (fboundp 'slack) slack-current-team)
       (code-compass--open-slack-from-email (code-compass--get-main-contributor-email))
     (message "Sorry, setup your emacs-slack to use this function. See https://github.com/yuya373/emacs-slack.")))
-(defalias 'c/slack-main-contributor 'code-compass-slack-main-contributor)
+(defalias 'c/slack-main-contributor #'code-compass-slack-main-contributor)
 
 ;; END EXPERIMENTAL slack support
 
@@ -1653,7 +1657,7 @@ in the current REPOSITORY, this has priority over DIRECTORY."
          code-compass--produce-json
          code-compass--generate-host-enclosure-diagram-html
          (code-compass--run-server-and-navigate it port))))))
-(defalias 'c/show-hotspot-cluster-sync 'code-compass-show-hotspot-cluster-sync)
+(defalias 'c/show-hotspot-cluster-sync #'code-compass-show-hotspot-cluster-sync)
 
 (defun code-compass-show-hotspot-cluster (directory date &optional port)
   "Show DIRECTORY enclosure diagram for hotspots.
@@ -1664,7 +1668,7 @@ Starting DATE reduces scope of Git log.
     (read-directory-name "Choose repositories directory:" ".")
     (call-interactively #'code-compass-request-date)))
   (code-compass--async-run #'code-compass-show-hotspot-cluster-sync directory date port))
-(defalias 'c/show-hotspot-cluster 'code-compass-show-hotspot-cluster)
+(defalias 'c/show-hotspot-cluster #'code-compass-show-hotspot-cluster)
 
 ;; END Hotspots for microservices
 
@@ -1684,15 +1688,21 @@ Starting DATE reduces scope of Git log.
   (interactive)
   (when (and code-compass-display-file-contributors (buffer-file-name))
     (message "Contributors of %s:\n%s" (buffer-file-name) (code-compass--contributors-list-for-current-buffer))))
-(defalias 'c/display-contributors 'code-compass-display-contributors)
+(defalias 'c/display-contributors #'code-compass-display-contributors)
 
 (defun code-compass-display-contributors-delayed ()
   "Delayed version of `code-compass--display-contributors' for use in hooks.
 For example `prog-mode-hook'."
   (run-with-timer 0.1 nil 'code-compass-display-contributors))
-(defalias 'c/display-contributors-delayed 'code-compass-display-contributors-delayed)
+(defalias 'c/display-contributors-delayed #'code-compass-display-contributors-delayed)
 
-(add-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)
+
+(defun code-compass-toggle-display-contributors ()
+  "Show the contributors when opening files."
+  (interactive)
+  (if (-contains-p 'prog-mode-hook #'code-compass-display-contributors-delayed)
+      (remove-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)
+    (add-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)))
 ;; END display contributors
 
 (defun code-compass-cheatsheet ()
@@ -1745,7 +1755,7 @@ For example `prog-mode-hook'."
       |--------------------------------------------------+-----------------------------------------------------------------|
 
 "))
-(defalias 'c/cheatsheet 'code-compass-cheatsheet)
+(defalias 'c/cheatsheet #'code-compass-cheatsheet)
 
 (defun code-compass-show-raw-csv (analysis repository date)
   "Show REPOSITORY edge bundling synchronously for code coupling up to DATE.
@@ -1768,7 +1778,7 @@ Argument ANALYSIS sets the anylysis command to run."
        (goto-char (- (point) 1))
        (insert (concat repository)))
      (goto-char (point-min)))))
-(defalias 'c/show-raw-csv 'code-compass-show-raw-csv)
+(defalias 'c/show-raw-csv #'code-compass-show-raw-csv)
 
 (provide 'code-compass)
 
