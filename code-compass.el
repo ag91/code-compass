@@ -4,7 +4,7 @@
 
 ;; Author: Andrea <andrea-dev@hotmail.com>
 ;; Version: 0.1.3
-;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1") url vc)
+;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1"))
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
 
@@ -381,7 +381,7 @@ Temporarily changes current buffer's default directory to DIRECTORY."
   (let ((contents
          (with-current-buffer buffer-name
            (buffer-string))))
-    (when (length> contents 1) (error (concat buffer-name "\n\n" contents)))))
+    (when (> (length contents) 1) (error (concat buffer-name "\n\n" contents)))))
 
 (defun code-compass-produce-git-report (repository date &optional before-date authors)
   "Create git report for REPOSITORY with a Git log starting at DATE.
@@ -1077,7 +1077,7 @@ Optionally define PORT on which to serve graph."
   (code-compass--in-temp-directory
    repository
    (--> repository
-        (code-compass-produce-git-report it date nil (if (length> authors 1)
+        (code-compass-produce-git-report it date nil (if (> (length authors) 1)
                                                          (s-concat "(" (s-join "|" authors) ")")
                                                        authors))
         code-compass--produce-code-maat-main-dev-report
