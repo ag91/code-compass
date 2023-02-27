@@ -1495,7 +1495,7 @@ When ARG is set show only history for given file."
     (switch-to-buffer buffer)
     (erase-buffer)
     (org-mode)
-    (insert (concat "* Files you need to modify after " (file-name-base file) ":\n"))
+    (insert "* Files you need to modify after " (file-name-base file) ":\n")
     (let* ((modified-files (--filter
                             (-contains-p
                              (s-split "\n" (shell-command-to-string "git diff --name-only HEAD"))
@@ -1776,7 +1776,7 @@ Argument ANALYSIS sets the anylysis command to run."
                 (search-forward "entity," nil t))
      (while (search-forward-regexp "\\\n." nil t)
        (goto-char (- (point) 1))
-       (insert (concat repository)))
+       (insert repository))
      (goto-char (point-min)))))
 (defalias 'c/show-raw-csv #'code-compass-show-raw-csv)
 
