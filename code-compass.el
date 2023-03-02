@@ -112,7 +112,13 @@ Contents are passed to the cloc executable via its --exclude-dir argument."
   :type 'list)
 
 (defcustom code-compass-calculate-coupling-project-key-fn
-  'identity
+  (lambda (repository)
+    (concat
+     repository
+     "-"
+     (s-trim
+      (shell-command-to-string
+       (format "cd %s; git rev-parse --short HEAD" repository)))))
   "Function taking a REPOSITORY path and returning a string."
   :group 'code-compass
   :type 'function)
@@ -280,7 +286,7 @@ A pointing up icon means the code has been growing,
   :group 'code-compass
   :type 'bool)
 
-(defcustom code-compass-cache-directory (concat user-emacs-directory ".code-compass/")
+(defcustom code-compass-cache-file (concat user-emacs-directory ".code-compass/cache")
   "Directory to store a cache of coupling files."
   :group 'code-compass
   :type 'string)
@@ -859,7 +865,6 @@ Serve graph on PORT."
       (code-compass--get-coupling-alist-sync ,repository))
    fun))
 
-
 (defvar code-compass-coupling-project-map
   (make-hash-table :test 'equal)
   "Hash table to contain coupling files list.")
@@ -867,53 +872,27 @@ Serve graph on PORT."
 (defun code-compass--get-coupled-files-alist (repository fun)
   "Run FUN on the coupled files for REPOSITORY."
   (let* ((key (funcall code-compass-calculate-coupling-project-key-fn repository))
-         (code-compass-files (gethash key code-compass-coupling-project-map))
-         (cache-file (code-compass--cache-file)))
+         (code-compass-files (gethash key code-compass-coupling-project-map)))
 
     (if code-compass-files
         (funcall fun code-compass-files)
-      (progn
-        (message "Building coupling cache asynchronously...")
-        (code-compass--get-coupling-alist
-         repository
-         `(lambda (result-files)
-            (message "Coupling Cache Built")
-            (puthash ,key result-files code-compass-coupling-project-map)
-            (funcall ,fun result-files)
-            ;; Save cache to local storage to access it faster next time if nothing has changed
-            (with-temp-file ,cache-file
-              (prin1 code-compass-coupling-project-map (current-buffer)))))))))
-
-(defun code-compass--cache-file ()
-  "Return the file path of where the hash table can/is stored."
-  ;; Create directory if it does not exist
-  (unless (file-exists-p code-compass-cache-directory)
-    (make-directory code-compass-cache-directory))
-
-  (let ((identifier (code-compass--identifier-for-cache)))
-    (format "%s%s" code-compass-cache-directory identifier)))
-
-(defun code-compass--identifier-for-cache ()
-  "Return an identifier that can be used to save hash table information.
-
-For Git, this will be the HEAD commit.
-For now, all other version control will error out until support is added."
-  (let ((backend (vc-backend buffer-file-name))
-        (identifier nil))
-    (cond
-     ((eq backend 'Git)
-      (setq identifier (s-trim (shell-command-to-string "git rev-parse --short HEAD"))))
-     (t
-      (error "Your backend '%s' is not supported" backend)))
-
-    identifier))
+      (message "Building coupling cache asynchronously...")
+      (code-compass--get-coupling-alist
+       repository
+       `(lambda (result-files)
+          (message "Coupling Cache Built")
+          (puthash ,key result-files code-compass-coupling-project-map)
+          (funcall ,fun result-files)
+          ;; Save cache to local storage to access it faster next time if nothing has changed
+          (with-temp-file ,code-compass-cache-file
+            (prin1 code-compass-coupling-project-map (current-buffer))))))))
 
 (defun code-compass-clear-coupling-project-map ()
   "Clear `code-compass-coupling-project-map' and deletes cache file."
   (interactive)
   (clrhash code-compass-coupling-project-map)
 
-  (delete-file (code-compass--cache-file)))
+  (delete-file code-compass-cache-file))
 (defalias 'c/clear-coupling-project-map #'code-compass-clear-coupling-project-map)
 
 (defun code-compass-get-coupled-files-alist-hook-fn ()
@@ -950,13 +929,11 @@ For now, all other version control will error out until support is added."
   "Allow user to choose files coupled according to previous modifications."
   (interactive)
 
-  (let ((cache-file (code-compass--cache-file)))
-    ;; load cache if it exists
-    (when (file-exists-p cache-file)
-      (with-temp-buffer
-        (insert-file-contents cache-file)
-        (goto-char (point-min))
-        (set 'code-compass-coupling-project-map (read (current-buffer))))))
+  (when (file-exists-p code-compass-cache-file)
+    (with-temp-buffer
+      (insert-file-contents code-compass-cache-file)
+      (goto-char (point-min))
+      (set 'code-compass-coupling-project-map (read (current-buffer)))))
 
   (code-compass--get-coupled-files-alist
    (vc-root-dir)
