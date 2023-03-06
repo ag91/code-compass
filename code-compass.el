@@ -915,8 +915,11 @@ Serve graph on PORT."
            (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
            (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
            (-map (lambda (file)
-                   (when (or (string= (file-truename file-name) (file-truename (car file)))
-                             (string= (file-truename file-name) (file-truename (nth 1 file))))
+                   (when (and
+                          (file-exists-p (file-truename (car file)))
+                          (file-exists-p (file-truename (nth 1 file)))
+                          (or (string= (file-truename file-name) (file-truename (car file)))
+                              (string= (file-truename file-name) (file-truename (nth 1 file)))))
                      (s-replace
                       (concat root "//")
                       ""
