@@ -910,20 +910,23 @@ Serve graph on PORT."
 
 (defun code-compass--show-coupled-files (files file-name)
   "Gather coupled files to FILE-NAME from all FILES."
-  (--> files
-       (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
-       (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
-       (-map (lambda (file)
-               (when (or (string= (file-truename file-name) (file-truename (car file)))
-                         (string= (file-truename file-name) (file-truename (nth 1 file))))
-                 (car
-                  (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file)))))
-             it)
-       (-remove 'null it)
-       (if (null it)
-           (message "No coupled file found!")
-         (let ((open-file (completing-read "Find coupled file: " it nil 't)))
-           (find-file open-file)))))
+  (if-let ((root (ignore-errors (car (s-split "//" (caar files))))))
+      (--> files
+           (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
+           (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
+           (-map (lambda (file)
+                   (when (or (string= (file-truename file-name) (file-truename (car file)))
+                             (string= (file-truename file-name) (file-truename (nth 1 file))))
+                     (s-replace
+                      (concat root "//")
+                      ""
+                      (car
+                       (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file))))))
+                 it)
+           -non-nil
+           (let ((open-file (completing-read "Find coupled file: " it nil 't)))
+             (find-file (concat root "/" open-file))))
+    (message "No coupled file found!")))
 
 (defun code-compass-find-coupled-files ()
   "Allow user to choose files coupled according to previous modifications."
