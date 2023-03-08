@@ -300,6 +300,7 @@ A pointing up icon means the code has been growing,
         (graph-cli-p (executable-find "graph"))
         (cloc-p (executable-find "cloc"))
         (gource-p (executable-find "gource"))
+        (docker-p (executable-find "docker"))
         (doctor-buffer (get-buffer-create "code-compass dependencies check")))
     (with-current-buffer doctor-buffer
       (read-only-mode -1)
@@ -313,6 +314,7 @@ A pointing up icon means the code has been growing,
       (insert "\n\nOptional dependencies:\n")
       (insert (format "- Graph-cli: %s\n" (if graph-cli-p "OK" "MISSING")))
       (insert (format "- Gource: %s\n" (if gource-p "OK" "MISSING")))
+      (insert (format "- Docker: %s\n" (if docker-p "OK" "MISSING")))
       (read-only-mode))
     (switch-to-buffer-other-window doctor-buffer)))
 (define-obsolete-function-alias 'c/doctor #'code-compass-doctor "0.1.2")
