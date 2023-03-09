@@ -852,11 +852,11 @@ Serve graph on PORT."
   (code-compass--in-temp-directory
    repository
    (--> repository
-     (code-compass-produce-git-report it nil)
-     code-compass--produce-code-maat-coupling-report
-     (code-compass--get-analysis-as-string-from-csv it "coupling")
-     (code-compass--add-filename-to-analysis-columns repository it)
-     (--map (s-split "," it) (cdr it)))))
+        (code-compass-produce-git-report it nil)
+        code-compass--produce-code-maat-coupling-report
+        (code-compass--get-analysis-as-string-from-csv "coupling")
+        (code-compass--add-filename-to-analysis-columns repository it)
+        (--map (s-split "," it) (cdr it)))))
 
 (defun code-compass--get-coupling-alist (repository fun)
   "FUN takes a list of coupled files in REPOSITORY."
@@ -1205,11 +1205,15 @@ Filter by DATE.
   (code-compass--run-code-maat "entity-ownership" repository)
   repository)
 
-(defun code-compass--get-analysis-as-string-from-csv (repository analysis)
-  "Get ANALYSIS in csv of REPOSITORY as text."
+(defun code-compass--slurp (file)
+  "Get string from FILE contents."
   (with-temp-buffer
-    (insert-file-contents-literally (s-concat analysis ".csv"))
+    (insert-file-contents-literally file)
     (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun code-compass--get-analysis-as-string-from-csv (analysis)
+  "Get ANALYSIS in csv as text."
+  (code-compass--slurp (s-concat analysis ".csv")))
 
 (defun code-compass--generate-pie-script (repository)
   "Generate python script for REPOSITORY."
@@ -1244,7 +1248,7 @@ Optional argument DATE to reduce time window."
           (code-compass-produce-git-report it date)
           code-compass--produce-code-maat-entity-ownership-report
           code-compass--generate-pie-script
-          (code-compass--get-analysis-as-string-from-csv repository "entity-ownership")
+          (code-compass--get-analysis-as-string-from-csv "entity-ownership")
           (code-compass--add-filename-to-analysis-columns repository it)
           (print it)
           (--filter (s-starts-with-p path it) it)
