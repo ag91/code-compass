@@ -286,6 +286,18 @@ Copyright 2010-2020 Mike Bostock
 
 If you have ideas or wishes, just open an issue and I will look into
 it! Thanks for caring.
+
+*** Testing
+:PROPERTIES:
+:CREATED:  [2023-03-09 Thu 16:26]
+:ID:       7d1a7149-8ef2-41c0-9b6b-36b3000ce561
+:END:
+
+Functions without side effects have tests in their documentation.
+
+To run those install https://github.com/ag91/doctest (at the time of
+writing my fork as enhancements over the original) and run =doctest=.
+
 ** Alternatives
 :PROPERTIES:
 :CREATED:  [2020-12-18 Fri 16:00]
