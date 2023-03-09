@@ -328,7 +328,13 @@ Optionally give TIME from which to start."
 
 (defun code-compass-request-date (days|months &optional time)
   "Request date in days or months by asking how many DAYS|MONTHS ago.
-Optionally give TIME from which to start."
+Optionally give TIME from which to start.
+
+>> (code-compass-request-date \"1d\" '(25610 2072 776840 400000))
+=> \"2023-03-08\"
+
+>> (code-compass-request-date \"1m\" '(25610 2072 776840 400000))
+=> \"2023-02-06\""
   (interactive
    (list (completing-read "From how long ago? " code-compass-default-periods)))
   (when (not (string= days|months "beginning"))
@@ -673,7 +679,10 @@ Try to infer how many space is an indent unless OPTS provides it."
 (defun code-compass-calculate-complexity-stats (code &optional opts)
   "Return complexity of CODE based on indentation.
 If OPTS is provided, use these settings to define what is the indentation.
-Return nil for empty CODE."
+Return nil for empty CODE.
+
+>> (-take 3 (code-compass-calculate-complexity-stats \"1\"))
+=> ((total . 0.0) (n-lines . 1) (max . 0.0))"
   (ignore-errors
     (--> code
          ;; TODO maybe add line numbers, so that I can also open the most troublesome (max-c) line automatically?
@@ -689,9 +698,8 @@ Return nil for empty CODE."
 Optionally you can provide the INDENTATION level of the file. The
 code can infer it automatically."
   (interactive)
-  (message "%s"
-           (code-compass-calculate-complexity-stats
-            (buffer-substring-no-properties (point-min) (point-max)) indentation)))
+  (code-compass-calculate-complexity-stats
+   (buffer-substring-no-properties (point-min) (point-max)) indentation))
 
 (define-obsolete-function-alias 'c/calculate-complexity-current-buffer #'code-compass-calculate-complexity-current-buffer "0.1.2")
 
@@ -1246,7 +1254,10 @@ Filter by DATE.
   (format code-compass-pie-or-bar-chart-command file))
 
 (defun code-compass--sum-by-first-column (rows)
-  "Utility to sum ROWS by first column."
+  "Utility to sum ROWS by first column.
+
+>> (code-compass--sum-by-first-column '((a . 1) (a . 2)))
+=> ((a . 3))"
   (let (result)
     (dolist (row rows)
       (let* ((key (car row))
@@ -1606,67 +1617,67 @@ We run `code-compass-show-hotspot-cluster-sync' from FILE."
 directory)
 
 (defun code-compass-show-hotspot-cluster-sync (repository date &optional port)
-"Show hotspot analysis for repositories in DIRECTORY.
+  "Show hotspot analysis for repositories in DIRECTORY.
 Filter by DATE.
 If a file `repos-cluster.txt' exists with a list of repositories
 in the current REPOSITORY, this has priority over DIRECTORY."
-(interactive
- (list
-  (read-directory-name "Choose repositories directory:" ".")
-  (call-interactively #'code-compass-request-date)
-  8888))
-(let* ((filepath (s-concat repository "/repos-cluster.txt"))
-       (directories
-        (or (code-compass--get-repositories-from-file filepath)
-            (-filter
-             #'code-compass--directory-git-p
-             (--remove
-              (or (s-ends-with? "/." it) (s-ends-with? "/.." it))
-              (directory-files repository 't)))))
-       (no-prefix-revisions-fn
-        (lambda (repo)
-          (code-compass--produce-code-maat-revisions-report repository)
-          repo)))
-  (message "Used directories: %s" directories)
-  (code-compass--in-temp-directory
-   repository
-   (code-compass--produce-cloc-report repository)
-   (--each directories
-     (--> it
-          (code-compass-produce-git-report it date)
-          (funcall no-prefix-revisions-fn it)
-          code-compass--add-prepended-reports
-          ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
-          (let* ((filename (code-compass--filename it))
-                 (rev-file (s-concat filename "-revisions.csv")))
-            (--> rev-file
-                 (with-temp-buffer
-                   (insert-file-contents-literally it)
-                   (buffer-substring-no-properties (point-min) (point-max)))
-                 (s-split "\n" it 'omit-nulls)
-                 cdr
-                 (--map (concat filename "/" it) it)
-                 (s-join "\n" it)
-                 (format "%s\n" it)
-                 (write-region it nil rev-file)))))
-   (code-compass--in-temp-directory
-    repository
-    ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
-    (shell-command "cat *-revisions.csv | sed '/^[[:space:]]*$/d' > revisions.csv;")
-    (write-region
-     (concat
-      "entity,n-revs\n"
-      (with-temp-buffer
-        (insert-file-contents-literally "revisions.csv")
-        (buffer-substring-no-properties (point-min) (point-max))))
-     nil
-     "revisions.csv")
-    (--> repository
-         code-compass--generate-merger-script
-         code-compass--generate-d3-v3-lib
-         code-compass--produce-json
-         code-compass--generate-host-enclosure-diagram-html
-         (code-compass--run-server-and-navigate it port))))))
+  (interactive
+   (list
+    (read-directory-name "Choose repositories directory:" ".")
+    (call-interactively #'code-compass-request-date)
+    8888))
+  (let* ((filepath (s-concat repository "/repos-cluster.txt"))
+         (directories
+          (or (code-compass--get-repositories-from-file filepath)
+              (-filter
+               #'code-compass--directory-git-p
+               (--remove
+                (or (s-ends-with? "/." it) (s-ends-with? "/.." it))
+                (directory-files repository 't)))))
+         (no-prefix-revisions-fn
+          (lambda (repo)
+            (code-compass--produce-code-maat-revisions-report repository)
+            repo)))
+    (message "Used directories: %s" directories)
+    (code-compass--in-temp-directory
+     repository
+     (code-compass--produce-cloc-report repository)
+     (--each directories
+       (--> it
+            (code-compass-produce-git-report it date)
+            (funcall no-prefix-revisions-fn it)
+            code-compass--add-prepended-reports
+            ;; codemaat: prepend "repo-name/" to all entries apart first and last (empty line)
+            (let* ((filename (code-compass--filename it))
+                   (rev-file (s-concat filename "-revisions.csv")))
+              (--> rev-file
+                   (with-temp-buffer
+                     (insert-file-contents-literally it)
+                     (buffer-substring-no-properties (point-min) (point-max)))
+                   (s-split "\n" it 'omit-nulls)
+                   cdr
+                   (--map (concat filename "/" it) it)
+                   (s-join "\n" it)
+                   (format "%s\n" it)
+                   (write-region it nil rev-file)))))
+     (code-compass--in-temp-directory
+      repository
+      ;; at this point I need to merge all *-revisions.csv and cloc-*.csv in something like "system"
+      (shell-command "cat *-revisions.csv | sed '/^[[:space:]]*$/d' > revisions.csv;")
+      (write-region
+       (concat
+        "entity,n-revs\n"
+        (with-temp-buffer
+          (insert-file-contents-literally "revisions.csv")
+          (buffer-substring-no-properties (point-min) (point-max))))
+       nil
+       "revisions.csv")
+      (--> repository
+           code-compass--generate-merger-script
+           code-compass--generate-d3-v3-lib
+           code-compass--produce-json
+           code-compass--generate-host-enclosure-diagram-html
+           (code-compass--run-server-and-navigate it port))))))
 (define-obsolete-function-alias 'c/show-hotspot-cluster-sync #'code-compass-show-hotspot-cluster-sync "0.1.2")
 
 (defun code-compass-show-hotspot-cluster (directory date &optional port)
