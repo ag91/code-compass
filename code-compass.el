@@ -67,7 +67,7 @@
   :group 'code-compass
   :type 'string)
 
-(defconst code-compass-path-to-code-compass (file-name-directory load-file-name)
+(defconst code-compass-path-to-code-compass (file-name-directory (or load-file-name (buffer-file-name)))
   "Path to code compass.")
 
 (defun code-compass--expand-file-name (file-name)
@@ -356,11 +356,17 @@ Optionally give TIME from which to start."
   (nth 2 l))
 
 (defun code-compass--filename (file)
-  "Get filename of FILE."
+  "Get filename of FILE.
+
+>> (code-compass--filename \"some/file.txt\")
+=> \"file.txt\""
   (file-name-nondirectory (directory-file-name file)))
 
 (defun code-compass--temp-dir (repository)
-  "Format temporary directory in which store analyses assets for REPOSITORY."
+  "Format temporary directory in which store analyses assets for REPOSITORY.
+
+>> (code-compass--temp-dir \"~/some-repo/\")
+=> \"/tmp/code-compass-some-repo/\""
   (format "%s/code-compass-%s/" code-compass-tmp-directory (code-compass--filename repository)))
 
 (defmacro code-compass--in-directory (directory &rest body)
@@ -595,18 +601,30 @@ PORT define where the html is served."
   (s-split "\n" code))
 
 (defun code-compass--remove-empty-lines (lines)
-  "Remove empty LINES."
+  "Remove empty LINES.
+
+>> (code-compass--remove-empty-lines '(\"line\" \" \" \"   \" \"\"))
+=> (\"line\")\""
   (--remove (eq (length (s-trim it)) 0) lines))
 
 (defun code-compass--remove-text-after-indentation (lines)
-  "Remove text in LINES."
+  "Remove text in LINES that is not indentation characters..
+
+>> (code-compass--remove-text-after-indentation '(\" one indent\"))
+=> (\" \")"
   (--map
    (apply #'string (--take-while (or (eq ?\s  it) (eq ?\t it)) (string-to-list it)))
    lines))
 
 (defun code-compass--find-indentation (lines-without-text)
   "Infer indentation level in LINES-WITHOUT-TEXT.
-If no indentation present in file, defaults to 2."
+If no indentation present in file, defaults to 2.
+
+>> (code-compass--find-indentation '(\"   \" \"   \" \"    \"))
+=> 3
+
+>> (code-compass--find-indentation '(\" \"))
+=> 1"
   (or (--> lines-without-text
            (--map (list (s-count-matches "\s" it) (s-count-matches "\t" it)) it)
            (let ((spaces-ind (-sort #'< (--remove (eq 0 it) (-map 'code-compass--first it))))
@@ -622,7 +640,10 @@ If no indentation present in file, defaults to 2."
 
 (defun code-compass--calculate-complexity (line-without-text indentation)
   "Calculate indentation complexity.
-This divides length of LINE-WITHOUT-TEXT by INDENTATION." ;
+This divides length of LINE-WITHOUT-TEXT by INDENTATION.
+
+>> (code-compass--calculate-complexity \"    \" 2)
+=> 2.0"
   (/ (+ 0.0 (length line-without-text)) indentation))
 
 (defun code-compass--as-logical-indents (lines &optional opts)
