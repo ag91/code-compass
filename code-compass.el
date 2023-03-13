@@ -939,25 +939,47 @@ Serve graph on PORT."
            (length x)))))))
 (define-obsolete-function-alias 'c/get-coupled-files-alist-hook-fn #'code-compass-get-coupled-files-alist-hook-fn "0.1.2")
 
+(defun code-compass--coupling-completions (file-name coupled-files root)
+  "Get a list of files coupled to FILE-NAME.
+The coupling information is provided by COUPLED-FILES.
+ROOT is the VCS project path.
+
+>> (code-compass--coupling-completions \"\" nil \"\")
+=> nil
+
+>> (code-compass--coupling-completions
+    (concat code-compass-path-to-code-compass \"code-compass.el\")
+    (list
+      (list
+        (concat code-compass-path-to-code-compass \"/README.org\")
+        \"code-compass.el\"
+        31
+        65))
+    code-compass-path-to-code-compass)
+=> (\"/home/andrea/.emacs.d/lisp/code-compass//README.org\")"
+  (let ((default-directory root))
+    (--> coupled-files
+       (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
+       (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
+       (-map (lambda (file)
+               (when (and
+                      (file-exists-p (file-truename (car file)))
+                      (file-exists-p (file-truename (nth 1 file)))
+                      (or (string= (file-truename file-name) (file-truename (car file)))
+                          (string= (file-truename file-name) (file-truename (nth 1 file)))))
+                 (s-replace
+                  (concat root "//")
+                  ""
+                  (car
+                   (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file))))))
+             it)
+       -non-nil)))
+
 (defun code-compass--show-coupled-files (files file-name)
   "Gather coupled files to FILE-NAME from all FILES."
   (if-let ((root (ignore-errors (car (s-split "//" (caar files))))))
       (--> files
-           (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
-           (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
-           (-map (lambda (file)
-                   (when (and
-                          (file-exists-p (file-truename (car file)))
-                          (file-exists-p (file-truename (nth 1 file)))
-                          (or (string= (file-truename file-name) (file-truename (car file)))
-                              (string= (file-truename file-name) (file-truename (nth 1 file)))))
-                     (s-replace
-                      (concat root "//")
-                      ""
-                      (car
-                       (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file))))))
-                 it)
-           -non-nil
+           (code-compass--coupling-completions file-name it root)
            (let ((open-file (completing-read "Find coupled file: " it nil 't)))
              (find-file (concat root "/" open-file))))
     (message "No coupled file found!")))
