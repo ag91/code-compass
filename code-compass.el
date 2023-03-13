@@ -904,7 +904,6 @@ Serve graph on PORT."
   "Run FUN on the coupled files for REPOSITORY."
   (let* ((key (funcall code-compass-calculate-coupling-project-key-fn repository))
          (code-compass-files (gethash key code-compass-coupling-project-map)))
-
     (if code-compass-files
         (funcall fun code-compass-files)
       (message "Building coupling cache asynchronously...")
@@ -956,30 +955,39 @@ ROOT is the VCS project path.
         31
         65))
     code-compass-path-to-code-compass)
-=> (\"/home/andrea/.emacs.d/lisp/code-compass//README.org\")"
-  (let ((default-directory root))
+=> (\"README.org\")"
+  (let ((default-directory root)
+        (root (s-chop-suffixes '("/" "/" "/") root)))
     (--> coupled-files
        (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
        (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
-       (-map (lambda (file)
-               (when (and
-                      (file-exists-p (file-truename (car file)))
-                      (file-exists-p (file-truename (nth 1 file)))
-                      (or (string= (file-truename file-name) (file-truename (car file)))
-                          (string= (file-truename file-name) (file-truename (nth 1 file)))))
-                 (s-replace
-                  (concat root "//")
-                  ""
-                  (car
-                   (--remove (string= (file-truename file-name) (file-truename it)) (-take 2 file))))))
-             it)
-       -non-nil)))
+       (-keep
+        (lambda (file)
+          (let ((src-coupled-file-name (expand-file-name (car file)))
+                (target-coupled-file-name-src (expand-file-name (nth 1 file)))
+                (file-name (expand-file-name file-name)))
+            (when (and
+                   (file-exists-p src-coupled-file-name)
+                   (file-exists-p target-coupled-file-name-src)
+                   (or (string= file-name src-coupled-file-name)
+                       (string= file-name target-coupled-file-name-src)))
+              (s-replace ; this replace is just removing the root prefix, so the completions are human readable
+               (concat root "/")
+               ""
+               (expand-file-name
+                (car
+                 ;; this picks only the coupled files, ignoring the file we are matching against (file-name)
+                 (--remove
+                  (string= (expand-file-name file-name) (expand-file-name it))
+                  (-take 2 file))))))))
+        it))))
 
 (defun code-compass--show-coupled-files (files file-name)
   "Gather coupled files to FILE-NAME from all FILES."
   (if-let ((root (ignore-errors (car (s-split "//" (caar files))))))
       (--> files
-           (code-compass--coupling-completions file-name it root)
+           (code-compass--coupling-completions file-name it (expand-file-name root))
+           (progn (message "%s" (list it root)) it)
            (let ((open-file (completing-read "Find coupled file: " it nil 't)))
              (find-file (concat root "/" open-file))))
     (message "No coupled file found!")))
