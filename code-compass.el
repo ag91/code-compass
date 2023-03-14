@@ -1751,7 +1751,7 @@ For example `prog-mode-hook'."
 (defun code-compass-toggle-display-contributors ()
   "Show the contributors when opening files."
   (interactive)
-  (if (-contains-p 'prog-mode-hook #'code-compass-display-contributors-delayed)
+  (if (-contains-p prog-mode-hook #'code-compass-display-contributors-delayed)
       (remove-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)
     (add-hook 'prog-mode-hook #'code-compass-display-contributors-delayed)))
 ;; END display contributors
