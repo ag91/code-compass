@@ -32,7 +32,7 @@
 ;;     Circles are packages or modules.
 ;;     The redder the circle, the more it has been modified lately. The bigger the more code it contains.
 ;;
-;; See documentation on https://github.com/ag91/code-compass
+;; See documentation at https://github.com/ag91/code-compass
 
 ;;; Code:
 (require 'dash)
