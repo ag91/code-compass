@@ -1728,11 +1728,12 @@ Starting DATE reduces scope of Git log.
 
 (defun code-compass--contributors-list-for-current-buffer ()
   "Return contributors of this file if it is in a git repository."
-  (when (vc-root-dir)
-    (shell-command-to-string
-     (concat
-      "git shortlog HEAD -n -s -- "
-      (buffer-file-name)))))
+  (if (vc-root-dir)
+      (shell-command-to-string
+       (concat
+        "git shortlog HEAD -n -s -- "
+        (buffer-file-name)))
+    "    No history yet"))
 
 (defun code-compass-display-contributors ()
   "Show in minibuffer the main contributors of this file."
