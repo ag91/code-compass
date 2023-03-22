@@ -4,7 +4,7 @@
 
 ;; Author: Andrea <andrea-dev@hotmail.com>
 ;; Version: 0.1.3
-;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1"))
+;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1") (f "0.20"))
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
 
@@ -1738,7 +1738,15 @@ Starting DATE reduces scope of Git log.
   "Show in minibuffer the main contributors of this file."
   (interactive)
   (when (and code-compass-display-file-contributors (buffer-file-name))
-    (message "Contributors of %s:\n%s" (buffer-file-name) (code-compass--contributors-list-for-current-buffer))))
+    (let ((file (buffer-file-name))
+          (parent-dir nil)
+          (common-parent nil))
+      (when (vc-root-dir)
+        (setq parent-dir (f-parent (vc-root-dir)))
+        (setq common-parent (f-common-parent `(,buffer-file-name ,parent-dir)))
+        (setq file (f-relative buffer-file-name common-parent)))
+
+      (message "Contributors of %s:\n%s" file (code-compass--contributors-list-for-current-buffer)))))
 (define-obsolete-function-alias 'c/display-contributors #'code-compass-display-contributors "0.1.2")
 
 (defun code-compass-display-contributors-delayed ()
