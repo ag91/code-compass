@@ -1740,6 +1740,10 @@ Starting DATE reduces scope of Git log.
   (interactive)
   (when (and code-compass-display-file-contributors (buffer-file-name))
     (let ((file-path buffer-file-name))
+      ;; When we have the ability to infer the project root, we will use that to display the relative file path
+      ;; Otherwise, we will display the entire full path.
+      ;; We can infer project root when file in question, is in VCS. If its a new file, the function won't
+      ;; be able to pick it up, so it will display the full file path.
       (when (vc-root-dir)
         (setq file-path (file-relative-name (buffer-file-name) (file-name-parent-directory (vc-root-dir)))))
       (message "Contributors of %s:\n%s" file-path (code-compass--contributors-list-for-current-buffer)))))
