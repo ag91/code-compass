@@ -1,4 +1,4 @@
-;;; code-compass.el --- Make Emacs your compass in a sea of software complexity -*- lexical-binding: t; -*-
+;;; code-compass.el --- helps you navigate your complex software aided by metrics and visualization -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023 Andrea
 
