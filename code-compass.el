@@ -341,7 +341,7 @@ Optionally give TIME from which to start.
     (format-time-string
      "%F"
      (apply
-      'code-compass--subtract-to-now
+      #'code-compass--subtract-to-now
       (-concat
        (if (s-contains-p "m" days|months)
            (list (string-to-number (s-replace "m" "" days|months)) (* 24 31))
@@ -1096,7 +1096,7 @@ Argument REPOSITORY defines for which repo to run this."
 (defun code-compass--generate-list-authors-colors (repository)
   "Generate list of authors of REPOSITORY."
   (--> (code-compass--get-authors repository)
-       (-zip it code-compass-authors-colors)
+       (-zip-pair it code-compass-authors-colors)
        (code-compass--insert-authors-colors-in-file it))
   repository)
 
@@ -1520,7 +1520,9 @@ When ARG is set show only history for given file."
        (s-concat
         (format "cd %s; %s -seconds-per-day %s" repository code-compass-gource-command code-compass-gource-seconds-per-day)
         (when date (format " --start-date %s" date))))
-    (message (format "Sorry, cannot find executable (%s). Try change the value of `code-compass-gource-command'" code-compass-gource-command))))
+    (message
+     "Sorry, cannot find executable (%s). Try change the value of `code-compass-gource-command'"
+     code-compass-gource-command)))
 (define-obsolete-function-alias 'c/show-gource #'code-compass-show-gource "0.1.2")
 ;; END wrapper gource
 
@@ -1735,6 +1737,23 @@ Starting DATE reduces scope of Git log.
         (buffer-file-name)))
     "    No history yet"))
 
+(defun code-compass-file-name-parent-directory (filename)
+  "Get parent of FILENAME. This comes in Emacs 29."
+  (let* ((expanded-filename (expand-file-name filename))
+         (parent (file-name-directory (directory-file-name expanded-filename))))
+    (cond
+     ;; filename is at top-level, therefore no parent
+     ((or (null parent)
+          ;; `equal' is enough, we don't need to resolve symlinks here
+          ;; with `file-equal-p', also for performance
+          (equal parent expanded-filename))
+      nil)
+     ;; filename is relative, return relative parent
+     ((not (file-name-absolute-p filename))
+      (file-relative-name parent))
+     (t
+      parent))))
+
 (defun code-compass-display-contributors ()
   "Show in minibuffer the main contributors of this file."
   (interactive)
@@ -1745,7 +1764,7 @@ Starting DATE reduces scope of Git log.
       ;; We can infer project root when file in question, is in VCS. If its a new file, the function won't
       ;; be able to pick it up, so it will display the full file path.
       (when (vc-root-dir)
-        (setq file-path (file-relative-name (buffer-file-name) (file-name-parent-directory (vc-root-dir)))))
+        (setq file-path (file-relative-name (buffer-file-name) (code-compass-file-name-parent-directory (vc-root-dir)))))
       (message "Contributors of %s:\n%s" file-path (code-compass--contributors-list-for-current-buffer)))))
 (define-obsolete-function-alias 'c/display-contributors #'code-compass-display-contributors "0.1.2")
 
