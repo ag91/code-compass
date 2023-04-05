@@ -984,13 +984,17 @@ ROOT is the VCS project path.
 
 (defun code-compass--show-coupled-files (files file-name)
   "Gather coupled files to FILE-NAME from all FILES."
-  (if-let ((root (ignore-errors (car (s-split "//" (caar files))))))
-      (--> files
-           (code-compass--coupling-completions file-name it (expand-file-name root))
-           (progn (message "%s" (list it root)) it)
-           (let ((open-file (completing-read "Find coupled file: " it nil 't)))
-             (find-file (concat root "/" open-file))))
-    (message "No coupled file found!")))
+  (let* ((root (ignore-errors (car (s-split "//" (caar files)))))
+         (completions (ignore-errors
+                        (-non-nil
+                         (code-compass--coupling-completions
+                          file-name
+                          files
+                          (expand-file-name root))))))
+    (if completions
+        (let ((open-file (completing-read "Find coupled file: " completions nil 't)))
+          (find-file (concat root "/" open-file)))
+      (error "No coupled file found!"))))
 
 (defun code-compass-find-coupled-files ()
   "Allow user to choose files coupled according to previous modifications."
