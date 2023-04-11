@@ -291,6 +291,13 @@ A pointing up icon means the code has been growing,
   :group 'code-compass
   :type 'string)
 
+;; these definitions are just to satisfy the linting tools
+(defvar browse-url-generic-program)
+(defvar slack-current-team)
+(declare-function slack-team-users "ext:slack.el")
+(declare-function slack-create-user-profile-buffer "ext:slack.el")
+(declare-function slack-buffer-display-im "ext:slack.el")
+
 (defun code-compass-doctor ()
   "Report if and what dependencies are missing."
   (interactive)
@@ -786,11 +793,11 @@ Optionally give file indentation in OPTS."
                 (call-interactively #'code-compass-request-date)))
   (code-compass--in-temp-directory
    repository
-   (--> repository
-        (code-compass-produce-git-report it date)
-        code-compass--produce-code-maat-abs-churn-report
-        "abs-churn.csv"
-        code-compass--plot-csv-file-with-graph-cli)))
+   (progn
+     (--> repository
+          (code-compass-produce-git-report it date)
+          code-compass--produce-code-maat-abs-churn-report)
+     (code-compass--plot-csv-file-with-graph-cli "abs-churn.csv"))))
 (define-obsolete-function-alias 'c/show-code-churn-sync #'code-compass-show-code-churn-sync "0.1.2")
 
 (defun code-compass-show-code-churn (repository date)
@@ -882,8 +889,8 @@ Serve graph on PORT."
    repository
    (--> repository
         (code-compass-produce-git-report it nil)
-        code-compass--produce-code-maat-coupling-report
-        (code-compass--get-analysis-as-string-from-csv "coupling")
+        code-compass--produce-code-maat-coupling-report)
+   (--> (code-compass--get-analysis-as-string-from-csv "coupling")
         (code-compass--add-filename-to-analysis-columns repository it)
         (--map (s-split "," it) (cdr it)))))
 
@@ -1313,10 +1320,9 @@ Optional argument DATE to reduce time window."
      (--> repository
           (code-compass-produce-git-report it date)
           code-compass--produce-code-maat-entity-ownership-report
-          code-compass--generate-pie-script
-          (code-compass--get-analysis-as-string-from-csv "entity-ownership")
+          code-compass--generate-pie-script)
+     (--> (code-compass--get-analysis-as-string-from-csv "entity-ownership")
           (code-compass--add-filename-to-analysis-columns repository it)
-          (print it)
           (--filter (s-starts-with-p path it) it)
           (--map
            (--> (s-split "," it)
@@ -1434,8 +1440,8 @@ When ARG is set show only history for given file."
     (--> (buffer-substring-no-properties (region-beginning) (region-end))
          code-compass--word-stats-to-csv-string
          (with-temp-file (format "%s/word-stats.csv" code-compass-tmp-directory)
-           (insert it))
-         (shell-command (format "graph --bar --xtick-angle 90 %s/word-stats.csv" code-compass-tmp-directory)))))
+           (insert it)))
+    (shell-command (format "graph --bar --xtick-angle 90 %s/word-stats.csv" code-compass-tmp-directory))))
 (define-obsolete-function-alias 'c/word-analysis-region-graph #'code-compass-word-analysis-region-graph "0.1.2")
 
 
@@ -1536,8 +1542,8 @@ When ARG is set show only history for given file."
   "Get coupled FILES that match FILE or current buffer's file."
   (let ((coupled-file (file-truename (or file (buffer-file-name)))))
     (--> files
-         (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) files) ;; sort by number of commits
-         (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) files) ;; sort then by how often this file has changed
+         (--sort (> (string-to-number (nth 3 it)) (string-to-number (nth 3 other))) it) ;; sort by number of commits
+         (--sort (> (string-to-number (nth 2 it)) (string-to-number (nth 2 other))) it) ;; sort then by how often this file has changed
          (-map (lambda (file)
                  (when (or (string= coupled-file (file-truename (car file)))
                            (string= coupled-file (file-truename (nth 1 file))))
@@ -1852,8 +1858,8 @@ Argument ANALYSIS sets the anylysis command to run."
    repository
    (--> repository
         (code-compass-produce-git-report it nil date)
-        (code-compass--run-code-maat analysis it)
-        (find-file (concat "./" analysis ".csv")))
+        (code-compass--run-code-maat analysis it))
+   (find-file (concat "./" analysis ".csv"))
    (when (progn (goto-char (point-min))
                 (search-forward "entity," nil t))
      (while (search-forward-regexp "\\\n." nil t)
