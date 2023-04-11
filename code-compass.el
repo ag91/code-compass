@@ -400,7 +400,7 @@ Temporarily changes current buffer's default directory to DIRECTORY."
       (code-compass--temp-dir ,repository)
       ,@body)))
 
-(defun code-compass--shell-command-failing-on-error (command buffer-name)
+(defun code-compass--shell-command-error-handler (command buffer-name)
   "Run COMMAND with `shell-command' but check if errors are output in BUFFER-NAME."
   (ignore-errors (kill-buffer buffer-name))
   (shell-command
@@ -433,7 +433,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
             (s-join " "  (--map (format "':(exclude)%s'" it) code-compass-exclude-directories)))
           " > gitreport.log")))
     (message "Running %s" git-command)
-    (code-compass--shell-command-failing-on-error git-command "*code-compass-produce-git-report-errors*"))
+    (code-compass--shell-command-error-handler git-command "*code-compass-produce-git-report-errors*"))
   repository)
 (define-obsolete-function-alias 'c/produce-git-report #'code-compass-produce-git-report "0.1.2")
 
@@ -445,7 +445,7 @@ The knowledge analysis allow to filter by AUTHORS when set."
     (when (and maat-jar-p (not (file-exists-p (code-compass--expand-file-name source-file))))
       (mkdir code-compass-download-directory t)
       (url-copy-file "https://github.com/smontanari/code-forensics/raw/v3.0.0/lib/analysers/code_maat/code-maat-1.0.1-standalone.jar" (code-compass--expand-file-name source-file) t))
-    (code-compass--shell-command-failing-on-error
+    (code-compass--shell-command-error-handler
      (format
       "%1$s -l %4$s/code-compass-%2$s/gitreport.log -c git2 -a %3$s > %3$s.csv"
       code-compass-code-maat-command
@@ -467,7 +467,7 @@ edit the variable `code-compass-exclude-directories'."
             "Producing cloc report with "
             (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
             "..."))
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
    "*code-compass--produce-cloc-report-errors*")
   repository)
@@ -507,7 +507,7 @@ This is just to not depend on a network connection."
 (defun code-compass--produce-json (repository)
   "Produce json for REPOSITORY."
   (message "Produce json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json"
    "*code-compass--produce-json-errors*")
   repository)
@@ -826,7 +826,7 @@ Optionally give file indentation in OPTS."
 (defun code-compass--produce-coupling-json (repository)
   "Produce coupling json needed by d3 for REPOSITORY."
   (message "Produce coupling json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json"
    "*code-compass--produce-coupling-json-errors*")
   repository)
@@ -1037,7 +1037,7 @@ ROOT is the VCS project path.
 (defun code-compass--produce-communication-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json"
    "*code-compass--produce-communication-json-errors*")
   repository)
@@ -1089,7 +1089,7 @@ Argument REPOSITORY defines for which repo to run this."
 (defun code-compass--produce-knowledge-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce knowledge json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json"
    "*code-compass--produce-knowledge-json-errors*")
   repository)
@@ -1175,7 +1175,7 @@ Optionally define PORT on which to serve graph."
 (defun code-compass--produce-refactoring-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce refactoring json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json" ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
    "*code-compass--produce-refactoring-json-errors*")
   repository)
@@ -1227,7 +1227,7 @@ Filter by DATE.
 (defun code-compass--produce-age-json (repository)
   "Generate REPOSITORY age json."
   (message "Produce age json...")
-  (code-compass--shell-command-failing-on-error
+  (code-compass--shell-command-error-handler
    "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json"
    "*code-compass--produce-age-json-errors*")
   repository)
@@ -1338,7 +1338,7 @@ Optional argument DATE to reduce time window."
           (cons "author,+&-lines\n" it)
           (with-temp-file "fragmentation.csv"
             (apply #'insert it)))
-     (code-compass--shell-command-failing-on-error
+     (code-compass--shell-command-error-handler
       (code-compass--show-pie-chart-command "fragmentation.csv")
       "*code-compass-show-fragmentation-sync-errors*"))))
 (define-obsolete-function-alias 'c/show-fragmentation-sync #'code-compass-show-fragmentation-sync "0.1.2")
