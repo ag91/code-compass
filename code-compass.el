@@ -563,9 +563,10 @@ Optional argument AUTHORS to filter AUTHORS for knowledge analysis."
       (setq code-compass-default-port ',code-compass-default-port)
       (let ((browse-url-browser-function #'browse-url-generic)
             (browse-url-generic-program ,code-compass-preferred-browser))
-        (if ,authors
-            (funcall ',command ,repository ,date ',authors) ; TODO shouldn't pass authors like this, as it is only for knowledge analysis.
-          (funcall ',command ,repository ,date))))
+        (condition-case err
+            (funcall ',command ,repository ,date ',authors)
+          (error
+           (funcall ',command ,repository ,date)))))
    `(lambda (result)
       (when (not ,do-not-serve) (code-compass--run-server-and-navigate  ,(expand-file-name repository) (or ,port code-compass-default-port))))))
 
@@ -1147,7 +1148,7 @@ Optionally define PORT on which to serve graph."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-knowledge-graph-sync #'code-compass-show-knowledge-graph-sync "0.1.2")
 
-(defun code-compass-show-knowledge-graph (repository date authors &optional port)
+(defun code-compass-show-knowledge-graph (repository date &optional authors  port)
   "Show REPOSITORY enclosure diagram for code knowledge.
 Filter by DATE and AUTHORS.
 Optionally define PORT on which to serve graph."
