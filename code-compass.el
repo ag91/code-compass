@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023 Andrea
 
 ;; Author: Andrea <andrea-dev@hotmail.com>
-;; Version: 0.1.3
+;; Version: 0.1.4
 ;; Package-Requires: ((emacs "26.1") (s "1.12.0") (dash "2.13") (async "1.9.7") (simple-httpd "1.5.1"))
 ;; Keywords: tools, extensions, help
 ;; Homepage: https://github.com/ag91/code-compass
@@ -463,13 +463,14 @@ The knowledge analysis allow to filter by AUTHORS when set."
   "Create cloc report for REPOSITORY.
 To filter specific subdirectories out of this report,
 edit the variable `code-compass-exclude-directories'."
-  (message (concat
-            "Producing cloc report with "
-            (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
-            "..."))
-  (code-compass--shell-command-error-handler
-   (format "(cd %s; PERL_BADLANG=0 cloc ./ --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))
-   "*code-compass--produce-cloc-report-errors*")
+  (let ((cloc-command (format "(cd %s; PERL_BADLANG=0 cloc ./ --timeout 0 --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))))
+    (message (concat
+              "Producing cloc report with "
+              cloc-command
+              "..."))
+    (code-compass--shell-command-error-handler
+     cloc-command
+     "*code-compass--produce-cloc-report-errors*"))
   repository)
 
 (defun code-compass--copy-file (file-name directory)
