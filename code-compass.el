@@ -301,6 +301,7 @@ A pointing up icon means the code has been growing,
 (declare-function slack-create-user-profile-buffer "ext:slack.el")
 (declare-function slack-buffer-display-im "ext:slack.el")
 
+;;;###autoload
 (defun code-compass-doctor ()
   "Report if and what dependencies are missing."
   (interactive)
@@ -571,6 +572,7 @@ Optional argument AUTHORS to filter AUTHORS for knowledge analysis."
    `(lambda (result)
       (when (not ,do-not-serve) (code-compass--run-server-and-navigate  ,(expand-file-name repository) (or ,port code-compass-default-port))))))
 
+;;;###autoload
 (defun code-compass-show-hotspots-sync (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots starting at DATE.
 Optionally served at PORT."
@@ -592,6 +594,7 @@ Optionally served at PORT."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-hotspots-sync #'code-compass-show-hotspots-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-hotspots (repository date &optional port)
   "Show REPOSITORY enclosure diagram for hotspots.
 Starting DATE reduces scope of Git log and
@@ -705,6 +708,7 @@ Return nil for empty CODE.
          code-compass--stats-from)))
 (define-obsolete-function-alias 'c/calculate-complexity-stats #'code-compass-calculate-complexity-stats "0.1.2")
 
+;;;###autoload
 (defun code-compass-calculate-complexity-current-buffer (&optional indentation)
   "Calculate complexity of the current buffer contents.
 Optionally you can provide the INDENTATION level of the file. The
@@ -771,6 +775,7 @@ Optional argument OPTS defines things like the indentation to use."
       (insert (s-join "\n" (--map (s-replace-all '((" " . ",") ("(" . "") (")" . "")) (format "%s" it)) data))))
     (code-compass--plot-csv-file-with-graph-cli tmp-file)))
 
+;;;###autoload
 (defun code-compass-show-complexity-over-commits (file &optional opts)
   "Make a graph plotting complexity out of a FILE.
 Optionally give file indentation in OPTS."
@@ -805,6 +810,7 @@ Optionally give file indentation in OPTS."
      (code-compass--plot-csv-file-with-graph-cli "abs-churn.csv"))))
 (define-obsolete-function-alias 'c/show-code-churn-sync #'code-compass-show-code-churn-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-code-churn (repository date)
   "Show how much code was added and removed from REPOSITORY from a DATE."
   (interactive (list
@@ -859,6 +865,7 @@ Serve graph on PORT."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-coupling-graph-sync #'code-compass-show-coupling-graph-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-coupling-graph (repository date &optional port)
   "Show REPOSITORY edge bundling for code coupling up to DATE. Serve graph on PORT."
   (interactive (list
@@ -1008,6 +1015,7 @@ ROOT is the VCS project path.
           (find-file (concat root "/" open-file)))
       (error "No coupled file found!"))))
 
+;;;###autoload
 (defun code-compass-find-coupled-files ()
   "Allow user to choose files coupled according to previous modifications."
   (interactive)
@@ -1065,6 +1073,7 @@ Optionally set the PORT on which to serve the graph."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-code-communication-sync #'code-compass-show-code-communication-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-code-communication (repository date &optional port)
   "Show REPOSITORY edge bundling for code communication from DATE.
 Optionally define PORT on which to serve graph."
@@ -1149,6 +1158,7 @@ Optionally define PORT on which to serve graph."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-knowledge-graph-sync #'code-compass-show-knowledge-graph-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-knowledge-graph (repository date &optional authors  port)
   "Show REPOSITORY enclosure diagram for code knowledge.
 Filter by DATE and AUTHORS.
@@ -1204,6 +1214,7 @@ Optionally define PORT on which to serve graph."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-refactoring-graph-sync #'code-compass-show-refactoring-graph-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-refactoring-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code refactoring.
 Filter by DATE.
@@ -1263,6 +1274,7 @@ Optionally define PORT on which to serve graph."
         (code-compass--run-server-and-navigate it port))))
 (define-obsolete-function-alias 'c/show-code-age-sync #'code-compass-show-code-age-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-stability-graph (repository date &optional port)
   "Show REPOSITORY enclosure diagram for code stability.
 Filter by DATE.
@@ -1345,6 +1357,7 @@ Optional argument DATE to reduce time window."
       "*code-compass-show-fragmentation-sync-errors*"))))
 (define-obsolete-function-alias 'c/show-fragmentation-sync #'code-compass-show-fragmentation-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-fragmentation (path)
   "Show knowledge fragmentation for PATH."
   (interactive "fShow fragmentation for:")
@@ -1399,6 +1412,7 @@ Optionally sorting the table according to ORDER-FN."
     (apply #'s-concat it)
     (s-concat "word,occurences\n\n" it)))
 
+;;;###autoload
 (defun code-compass-word-statistics (string &optional order-fn)
   "Produce a buffer with word statistics from STRING.
 Optionally define ORDER-FN
@@ -1412,6 +1426,7 @@ Optionally define ORDER-FN
   (goto-char (point-min)))
 (define-obsolete-function-alias 'c/word-statistics #'code-compass-word-statistics "0.1.2")
 
+;;;###autoload
 (defun code-compass-word-semantics (string)
   "Produce a buffer with the words least used.
 This could contain the most semantically relevant from STRING."
@@ -1420,6 +1435,7 @@ This could contain the most semantically relevant from STRING."
   (code-compass-word-statistics string (lambda (a b) (< (cdr a) (cdr b)))))
 (define-obsolete-function-alias 'c/word-semantics #'code-compass-word-semantics "0.1.2")
 
+;;;###autoload
 (defun code-compass-word-analysis-commits (arg)
   "Show the frequency of words used in commits messages.
 When ARG is set show only history for given file."
@@ -1430,6 +1446,7 @@ When ARG is set show only history for given file."
        code-compass-word-statistics))
 (define-obsolete-function-alias 'c/word-analysis-commits #'code-compass-word-analysis-commits "0.1.2")
 
+;;;###autoload
 (defun code-compass-word-analysis-region ()
   "Show the frequency of words in a region."
   (interactive)
@@ -1438,6 +1455,7 @@ When ARG is set show only history for given file."
          code-compass-word-statistics)))
 (define-obsolete-function-alias 'c/word-analysis-region #'code-compass-word-analysis-region "0.1.2")
 
+;;;###autoload
 (defun code-compass-word-analysis-region-graph ()
   "Show the frequency graph for words in region."
   (interactive)
@@ -1524,6 +1542,7 @@ When ARG is set show only history for given file."
 ;; END churn icon
 ;; BEGIN wrapper gource
 
+;;;###autoload
 (defun code-compass-show-gource (repository date)
   "Open gource for REPOSITORY from DATE."
   (interactive
@@ -1576,6 +1595,7 @@ When ARG is set show only history for given file."
         (insert (format "** DONE [[%s][%s]]\n" it (file-name-base it)))))
     buffer))
 
+;;;###autoload
 (defun code-compass-create-todos-from-coupled-files (&optional file)
   "Allow user to choose a coupled file to FILE or the current buffer's file."
   (interactive)
@@ -1624,6 +1644,7 @@ When ARG is set show only history for given file."
         (slack-team-users slack-current-team))
        :id)))))
 
+;;;###autoload
 (defun code-compass-slack-main-contributor ()
   "Open slack chat with main contributor of file."
   (interactive)
@@ -1727,6 +1748,7 @@ in the current REPOSITORY, this has priority over DIRECTORY."
            (code-compass--run-server-and-navigate it port))))))
 (define-obsolete-function-alias 'c/show-hotspot-cluster-sync #'code-compass-show-hotspot-cluster-sync "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-hotspot-cluster (directory date &optional port)
   "Show DIRECTORY enclosure diagram for hotspots.
 Starting DATE reduces scope of Git log.
@@ -1769,6 +1791,7 @@ Starting DATE reduces scope of Git log.
      (t
       parent))))
 
+;;;###autoload
 (defun code-compass-display-contributors ()
   "Show in minibuffer the main contributors of this file."
   (interactive)
@@ -1850,6 +1873,7 @@ For example `prog-mode-hook'."
 "))
 (define-obsolete-function-alias 'c/cheatsheet #'code-compass-cheatsheet "0.1.2")
 
+;;;###autoload
 (defun code-compass-show-raw-csv (analysis repository date)
   "Show REPOSITORY edge bundling synchronously for code coupling up to DATE.
 Serve graph on PORT.
