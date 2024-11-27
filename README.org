@@ -55,26 +55,11 @@ And the following Emacs packages:
 
 - async.el
 - dash.el
-- f.el
 - s.el
 - simple-httpd
 
-
-If you use =use-package= and you are on a Linux system, this will take
-care of the Emacs installation:
-
-#+begin_src elisp :noeval
-(use-package async)
-(use-package dash)
-(use-package f)
-(use-package s)
-(use-package simple-httpd)
-
-(use-package code-compass
-  :load-path "~/.emacs.d/lisp")
-#+end_src
-
-For Docker, the Code Maat image, cloc and graph-cli run the following script:
+If you are on a Linux system, Docker, the Code Maat image, and cloc can be
+installed by running the following script:
 
 #+begin_src sh :noeval
 # Docker is only necessary if you want to use that instead of the (automatically downloaded) JAR file
@@ -87,11 +72,36 @@ For Docker, the Code Maat image, cloc and graph-cli run the following script:
 #docker build -t code-maat-app .
 
 sudo apt install cloc;
+#+end_src
 
-cd /tmp;
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; # from here https://pip.pypa.io/en/stable/installing/
-python get-pip.py --user
-pip3 install --user graph-cli # https://github.com/mcastorina/graph-cli
+Python dependencies are stored in a virtual environment managed by
+code-compass. These are installed by the function =code-compass-install=.
+
+*** Installation from Melpa
+
+Code-compass can be installed as a package using =use-package=:
+
+#+begin_src elisp :noeval
+(use-package code-compass
+  :ensure t
+  :config
+  (code-compass-install))
+#+end_src
+
+*** Installation
+
+Code-compass can be installed from manually with:
+
+#+begin_src elisp :noeval
+(use-package async)
+(use-package dash)
+(use-package s)
+(use-package simple-httpd)
+
+(use-package code-compass
+  :load-path "~/.emacs.d/lisp"
+  :config
+  (code-compass-install))
 #+end_src
 
 For trying things out in a clean Emacs:
@@ -119,7 +129,6 @@ For trying things out in a clean Emacs:
 (require 'bind-key)
 (use-package async)
 (use-package dash)
-(use-package f)
 (use-package s)
 (use-package simple-httpd)
 #+end_src
