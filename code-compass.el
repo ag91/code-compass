@@ -45,6 +45,10 @@
 (require 'url)
 (require 'vc)
 
+(defun code-compass--python-script (script)
+  "Return the command to run a script with code-compass' python. "
+  (concat code-compass-download-directory "/venv/bin/python3 " script)
+
 (defgroup code-compass nil
   "Options specific to code-compass."
   :tag "code-compass"
@@ -71,7 +75,7 @@
   :type 'string)
 
 (defconst code-compass-path-to-code-compass (file-name-directory (or load-file-name (buffer-file-name)))
-  "Path to code compass.")
+  "The directory from where code compass was loaded.")
 
 (defun code-compass--expand-file-name (file-name)
   "Expand FILE-NAME with `code-compass-path-to-code-compass'."
@@ -247,11 +251,11 @@ Contents are passed to the cloc executable via its --exclude-dir argument."
   :group 'code-compass
   :type 'list)
 
-(defcustom code-compass-pie-or-bar-chart-command "python3 csv-to-pie-graph.py %s"
+(defcustom code-compass-pie-or-bar-chart-command (code-compass--python-script "csv-to-pie-graph.py %s")
   "Command to visualize chart."
   :group 'code-compass
   :type 'string
-  :options '("python3 csv-to-pie-graph.py %s" "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
+  :options '((code-compass--python-script "csv-to-pie-graph.py %s") "graph %s --bar --width 0.4 --offset='-0.2,0.2'"))
 
 (defcustom code-compass-gource-command
   "gource"
@@ -302,13 +306,28 @@ A pointing up icon means the code has been growing,
 (declare-function slack-buffer-display-im "ext:slack.el")
 
 ;;;###autoload
+(defun code-compass-install (&optional no-query-p)
+  (interactive)
+  (let ((venv-dir (file-name-concat code-compass-download-directory "/venv/")))
+    (when (and  (not (file-exists-p venv-dir)) (or no-query-p
+              (y-or-n-p "Need to install code-compass python dependencies, do it now ?")))
+      (code-compass--in-directory code-compass-download-directory
+        (mkdir code-compass-download-directory t)
+        (let ((compilation-buffer (compilation-start "python3 -m venv venv && ./venv/bin/pip3 install -r ../requirements.txt")))
+          (if (get-buffer-window compilation-buffer)
+              (select-window (get-buffer-window compilation-buffer))
+            (pop-to-buffer compilation-buffer))
+        )))))
+
+;;;###autoload
 (defun code-compass-doctor ()
   "Report if and what dependencies are missing."
   (interactive)
   (let ((git-p (executable-find "git"))
         (python-p (executable-find "python3"))
+        (python-venv-p (file-exists-p (file-name-concat code-compass-download-directory "/venv/")))
         (java-p (executable-find "java"))
-        (graph-cli-p (executable-find "graph"))
+        (graph-cli-p (file-exists-p (file-name-concat code-compass-download-directory "/venv/bin/graph")))
         (cloc-p (executable-find "cloc"))
         (gource-p (executable-find "gource"))
         (docker-p (executable-find "docker"))
@@ -320,6 +339,7 @@ A pointing up icon means the code has been growing,
       (insert "Required dependencies for minimal functionality:\n")
       (insert (format "- Git: %s\n" (if git-p "OK" "MISSING")))
       (insert (format "- Python: %s\n" (if python-p "OK" "MISSING")))
+      (insert (format "- Python venv: %s\n" (if python-venv-p "OK" "MISSING")))
       (insert (format "- Java: %s\n" (if java-p "OK" "MISSING")))
       (insert (format "- Cloc: %s\n" (if cloc-p "OK" "MISSING")))
       (insert "\n\nOptional dependencies:\n")
@@ -389,12 +409,14 @@ Optionally give TIME from which to start.
 (defmacro code-compass--in-directory (directory &rest body)
   "Execute BODY in DIRECTORY.
 Temporarily changes current buffer's default directory to DIRECTORY."
+  (declare (indent defun))
   `(let ((default-directory ,directory))
      (unwind-protect
          ,@body)))
 
 (defmacro code-compass--in-temp-directory (repository &rest body)
   "Execute BODY in temporary directory created for analysed REPOSITORY."
+  (declare (indent defun))
   `(progn
      (mkdir (code-compass--temp-dir ,repository) t)
      (code-compass--in-directory
@@ -510,7 +532,7 @@ This is just to not depend on a network connection."
   "Produce json for REPOSITORY."
   (message "Produce json...")
   (code-compass--shell-command-error-handler
-   "python3 csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json"
+   (code-compass--python-script "csv_as_enclosure_json.py --structure cloc.csv --weights revisions.csv > hotspot_proto.json")
    "*code-compass--produce-json-errors*")
   repository)
 
@@ -765,7 +787,7 @@ Optional argument OPTS defines things like the indentation to use."
 (defun code-compass--plot-csv-file-with-graph-cli (file)
   "Plot CSV FILE with graph-cli."
   (async-shell-command
-   (format "graph --xtick-angle 90 %s" file)))
+   (format "%s/venv/bin/graph --xtick-angle 90 %s" code-compass-download-directory file)))
 
 (defun code-compass--plot-lines-with-graph-cli (data)
   "Plot DATA from lists as a graph."
@@ -835,7 +857,7 @@ Optionally give file indentation in OPTS."
   "Produce coupling json needed by d3 for REPOSITORY."
   (message "Produce coupling json...")
   (code-compass--shell-command-error-handler
-   "python3 coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json"
+   (code-compass--python-script "coupling_csv_as_edge_bundling.py --coupling coupling.csv > edgebundling.json")
    "*code-compass--produce-coupling-json-errors*")
   repository)
 
@@ -1048,7 +1070,7 @@ ROOT is the VCS project path.
   "Generate REPOSITORY age json."
   (message "Produce age json...")
   (code-compass--shell-command-error-handler
-   "python3 communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json"
+   (code-compass--python-script "communication_csv_as_edge_bundling.py --communication communication.csv > edgebundling.json")
    "*code-compass--produce-communication-json-errors*")
   repository)
 
@@ -1101,7 +1123,7 @@ Argument REPOSITORY defines for which repo to run this."
   "Generate REPOSITORY age json."
   (message "Produce knowledge json...")
   (code-compass--shell-command-error-handler
-   "python3 knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json"
+   (code-compass--python-script "knowledge_csv_as_enclosure_diagram.py --structure cloc.csv --owners main-dev.csv --authors authors.csv > knowledge.json")
    "*code-compass--produce-knowledge-json-errors*")
   repository)
 
@@ -1188,7 +1210,7 @@ Optionally define PORT on which to serve graph."
   "Generate REPOSITORY age json."
   (message "Produce refactoring json...")
   (code-compass--shell-command-error-handler
-   "python3 refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json" ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
+   (code-compass--python-script "refactoring_csv_as_enclosure_diagram.py --structure cloc.csv --owners refactoring-main-dev.csv --authors authors.csv > knowledge.json") ; TODO should be refactoring.json, but leaving knowledge.json for code reuse
    "*code-compass--produce-refactoring-json-errors*")
   repository)
 
@@ -1241,7 +1263,7 @@ Filter by DATE.
   "Generate REPOSITORY age json."
   (message "Produce age json...")
   (code-compass--shell-command-error-handler
-   "python3 code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json"
+   (code-compass--python-script "code_age_csv_as_enclosure_json.py --structure cloc.csv --weights age.csv > age.json")
    "*code-compass--produce-age-json-errors*")
   repository)
 
