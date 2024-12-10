@@ -47,7 +47,7 @@
 
 (defun code-compass--python-script (script)
   "Return the command to run a script with code-compass' python. "
-  (concat code-compass-download-directory "/venv/bin/python3 " script)
+  (concat code-compass-download-directory "/venv/bin/python3 " script))
 
 (defgroup code-compass nil
   "Options specific to code-compass."
