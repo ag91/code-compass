@@ -310,14 +310,14 @@ A pointing up icon means the code has been growing,
   (interactive)
   (let ((venv-dir (file-name-concat code-compass-download-directory "/venv/")))
     (when (and  (not (file-exists-p venv-dir)) (or no-query-p
-              (y-or-n-p "Need to install code-compass python dependencies, do it now ?")))
+                                                   (y-or-n-p "Need to install code-compass python dependencies, do it now ?")))
       (code-compass--in-directory code-compass-download-directory
         (mkdir code-compass-download-directory t)
-        (let ((compilation-buffer (compilation-start "python3 -m venv venv && ./venv/bin/pip3 install -r ../requirements.txt")))
+        (let ((compilation-buffer (compilation-start (format "cd %s; python3 -m venv venv && ./venv/bin/pip3 install -r ../requirements.txt" code-compass-download-directory))))
           (if (get-buffer-window compilation-buffer)
               (select-window (get-buffer-window compilation-buffer))
             (pop-to-buffer compilation-buffer))
-        )))))
+          )))))
 
 ;;;###autoload
 (defun code-compass-doctor ()
