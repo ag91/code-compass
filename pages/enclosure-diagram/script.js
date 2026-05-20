@@ -61,8 +61,31 @@ d3.json("hotspot_proto.json", function (error, root) {
             return d.weight;
         })
         .on("click", function (d) {
+            if (d.parent && !d.children) {
+                d3.event.stopPropagation();
+                openInEmacs(d);
+                return;
+            }
             return zoom(focus == d ? root : d);
         });
+
+    function nodePath(d) {
+        var parts = [];
+        var n = d;
+        while (n && n.parent) {
+            parts.unshift(n.name);
+            n = n.parent;
+        }
+        return parts.join("/");
+    }
+
+    function openInEmacs(d) {
+        if (d.children) return;
+        var p = nodePath(d);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/open?path=" + encodeURIComponent(p), true);
+        xhr.send();
+    }
 
     svg.append("g")
         .selectAll("text")
@@ -70,6 +93,9 @@ d3.json("hotspot_proto.json", function (error, root) {
         .enter()
         .append("text")
         .attr("class", "label")
+        .style("cursor", function (d) {
+            return d.children ? null : "pointer";
+        })
         .attr("transform", function (d) {
             return "translate(" + d.x + "," + d.y + ")";
         })
@@ -81,6 +107,14 @@ d3.json("hotspot_proto.json", function (error, root) {
         })
         .text(function (d) {
             return d.name;
+        })
+        .on("click", function (d) {
+            d3.event.stopPropagation();
+            if (d.parent && !d.children) {
+                openInEmacs(d);
+            } else {
+                zoom(focus == d ? root : d);
+            }
         });
 
     d3.select(window).on("click", function () {

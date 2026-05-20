@@ -47,7 +47,7 @@
 
 (defun code-compass--python-script (script)
   "Return the command to run a script with code-compass' python. "
-  (concat code-compass-download-directory "/venv/bin/python3 " script))
+  (concat code-compass-download-directory "/venv/bin/python " script))
 
 (defgroup code-compass nil
   "Options specific to code-compass."
@@ -308,9 +308,9 @@ A pointing up icon means the code has been growing,
 ;;;###autoload
 (defun code-compass-install (&optional no-query-p)
   (interactive)
-  (let ((venv-dir (file-name-concat code-compass-download-directory "/venv/")))
-    (when (and  (not (file-exists-p venv-dir)) (or no-query-p
-                                                   (y-or-n-p "Need to install code-compass python dependencies, do it now ?")))
+  (let ((venv-dir (file-name-concat code-compass-download-directory "venv/")))
+    (when (and (not (file-exists-p venv-dir)) (or no-query-p
+                                                  (y-or-n-p "Need to install code-compass python dependencies, do it now ?")))
       (code-compass--in-directory code-compass-download-directory
         (mkdir code-compass-download-directory t)
         (let ((compilation-buffer (compilation-start (format "cd %s; python3 -m venv venv && ./venv/bin/pip3 install -r ../requirements.txt" code-compass-download-directory))))
@@ -551,13 +551,48 @@ This is just to not depend on a network connection."
     (browse-url (format "http://localhost:%s/zoomable.html" port)))
   repository)
 
+(defvar code-compass--served-repository nil
+  "Absolute path of the repository currently served by `simple-httpd'.
+Used by the `/open' servlet to resolve relative paths clicked in the
+enclosure-diagram visualization.")
+
 (defun code-compass--run-server (repository &optional port)
   "Serve directory for REPOSITORY, optionally at PORT."
   (let ((httpd-host 'local)
         (httpd-port (or port code-compass-default-port)))
     (httpd-stop)
+    (setq code-compass--served-repository (expand-file-name repository))
     (ignore-errors (httpd-serve-directory (code-compass--temp-dir repository))))
   repository)
+
+(defservlet* open text/plain (path)
+  "Open PATH inside the repository currently served by code-compass in
+the current Emacs.  PATH is a slash-separated repository-relative path
+sent from the enclosure-diagram visualization."
+  (let ((repo code-compass--served-repository))
+    (cond
+     ((null repo)
+      (insert "no repository is currently served"))
+     ((or (null path) (string-empty-p path))
+      (insert "missing path"))
+     (t
+      (let* ((clean (replace-regexp-in-string "\\`/+" "" path))
+             (full (expand-file-name clean repo)))
+        (if (not (string-prefix-p (file-name-as-directory repo) full))
+            (insert (format "refusing to open path outside repository: %s" full))
+          (if (not (file-exists-p full))
+              (insert (format "file not found: %s" full))
+            ;; With `run-at-time 0 nil`, the servlet finishes writing
+            ;; its 200 response and closes the connection first; then
+            ;; Emacs returns to its main command loop and runs
+            ;; `find-file` cleanly from there.
+            (run-at-time 0 nil
+                         (lambda (f)
+                           (find-file f)
+                           (when (fboundp 'select-frame-set-input-focus)
+                             (select-frame-set-input-focus (selected-frame))))
+                         full)
+            (insert (format "opening %s" full)))))))))
 
 (defun code-compass--run-server-and-navigate (repository &optional port)
   "Serve and navigate to REPOSITORY, optionally at PORT."
