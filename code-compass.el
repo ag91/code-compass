@@ -118,6 +118,13 @@ Contents are passed to the cloc executable via its --exclude-dir argument."
   :group 'code-compass
   :type 'list)
 
+(defcustom code-compass-respect-gitignore t
+  "If non-nil, parse `.gitignore' files and exclude matching directories.
+This supplements `code-compass-exclude-directories' so that directories
+ignored by Git are also excluded from hotspot and coupling analyses."
+  :group 'code-compass
+  :type 'boolean)
+
 (defcustom code-compass-calculate-coupling-project-key-fn
   (lambda (repository)
     (concat
@@ -435,6 +442,34 @@ Temporarily changes current buffer's default directory to DIRECTORY."
            (buffer-string))))
     (when (> (length contents) 1) (error (concat buffer-name "\n\n" contents)))))
 
+(defun code-compass--parse-gitignore (repository)
+  "Parse `.gitignore' in REPOSITORY and return a list of directory names to exclude.
+Only simple directory patterns are extracted (lines with no wildcards).
+Patterns with leading/trailing slashes are stripped to bare names so they
+can be passed to cloc's `--exclude-dir' and git's `:(exclude)' pathspec."
+  (let ((gitignore-file (expand-file-name ".gitignore" repository)))
+    (when (file-exists-p gitignore-file)
+      (with-temp-buffer
+        (insert-file-contents gitignore-file)
+        (let ((lines (split-string (buffer-string) "\n" t)))
+          (-map (lambda (line)
+                  (string-trim line "/" "/"))
+                (-filter (lambda (line)
+                           (and (not (s-blank-p line))
+                                (not (s-prefix-p "#" line))
+                                (not (s-contains-p "*" line))
+                                (not (s-contains-p "[" line))))
+                         (-map #'string-trim lines))))))))
+
+(defun code-compass--exclude-directories (repository)
+  "Return the combined list of directories to exclude for REPOSITORY.
+This merges `code-compass-exclude-directories' with patterns parsed from
+`.gitignore' when `code-compass-respect-gitignore' is non-nil."
+  (let ((base code-compass-exclude-directories))
+    (if code-compass-respect-gitignore
+        (-uniq (-concat base (code-compass--parse-gitignore repository)))
+      base)))
+
 (defun code-compass-produce-git-report (repository date &optional before-date authors)
   "Create git report for REPOSITORY with a Git log starting at DATE.
 Define optionally a BEFORE-DATE.
@@ -442,19 +477,20 @@ The knowledge analysis allow to filter by AUTHORS when set."
   (interactive
    (list (call-interactively #'code-compass-request-date)))
   (message "Producing git report...")
-  (let ((git-command
-         (s-concat
-          (format "git -C %s" repository)
-          " log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
-          (when authors
-            (format "--perl-regexp --author='%s' " authors))
-          (when date
-            (format "--after=%s " date))
-          (when before-date
-            (format "--before=%s " before-date))
-          (when code-compass-exclude-directories
-            (s-join " "  (--map (format "':(exclude)%s'" it) code-compass-exclude-directories)))
-          " > gitreport.log")))
+  (let* ((exclude-dirs (code-compass--exclude-directories repository))
+         (git-command
+          (s-concat
+           (format "git -C %s" repository)
+           " log --all --numstat --date=short --pretty=format:'--%h--%ad--%aN' --no-renames "
+           (when authors
+             (format "--perl-regexp --author='%s' " authors))
+           (when date
+             (format "--after=%s " date))
+           (when before-date
+             (format "--before=%s " before-date))
+           (when exclude-dirs
+             (s-join " "  (--map (format "':(exclude)%s'" it) exclude-dirs)))
+           " > gitreport.log")))
     (message "Running %s" git-command)
     (code-compass--shell-command-error-handler git-command "*code-compass-produce-git-report-errors*"))
   repository)
@@ -485,8 +521,11 @@ The knowledge analysis allow to filter by AUTHORS when set."
 (defun code-compass--produce-cloc-report (repository)
   "Create cloc report for REPOSITORY.
 To filter specific subdirectories out of this report,
-edit the variable `code-compass-exclude-directories'."
-  (let ((cloc-command (format "(cd %s; PERL_BADLANG=0 cloc ./ --timeout 0 --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join code-compass-exclude-directories ","))))
+edit the variable `code-compass-exclude-directories'.
+When `code-compass-respect-gitignore' is non-nil, directories listed in
+`.gitignore' are also excluded."
+  (let* ((exclude-dirs (code-compass--exclude-directories repository))
+         (cloc-command (format "(cd %s; PERL_BADLANG=0 cloc ./ --timeout 0 --by-file --csv --quiet --exclude-dir=%s) > cloc.csv" repository (string-join exclude-dirs ","))))
     (message (concat
               "Producing cloc report with "
               cloc-command
@@ -613,6 +652,7 @@ Optional argument AUTHORS to filter AUTHORS for knowledge analysis."
       (setq code-compass-calculate-coupling-project-key-fn ',code-compass-calculate-coupling-project-key-fn)
       (setq code-compass-authors-colors ',code-compass-authors-colors)
       (setq code-compass-exclude-directories ',code-compass-exclude-directories)
+      (setq code-compass-respect-gitignore ,code-compass-respect-gitignore)
       (setq code-compass-preferred-browser ,code-compass-preferred-browser)
       (setq code-compass-snapshot-periods ',code-compass-snapshot-periods)
       (setq code-compass-default-periods ',code-compass-default-periods)
