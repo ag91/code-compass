@@ -1994,6 +1994,126 @@ Argument ANALYSIS sets the anylysis command to run."
      (goto-char (point-min)))))
 (define-obsolete-function-alias 'c/show-raw-csv #'code-compass-show-raw-csv "0.1.2")
 
+;; BEGIN file metrics
+
+(defun code-compass--parse-git-log-metrics (log &optional ignore-regexp)
+  "Parse a `git log --name-only' LOG into per-file metrics.
+LOG must use the same pretty format
+`code-compass-produce-git-report' writes for code-maat
+(`--%h--%ad--%aN': one header line per commit, then one file per
+line).  IGNORE-REGEXP skips commits whose author matches it (bot
+authors, e.g. renovate).
+Return a hash table path -> plist (:revisions N :authors
+((author . count)...) :main-dev AUTHOR :last-touch
+\"YYYY-MM-DD\"), where :revisions is the number of commits that
+touched the file, :authors counts commits per author (sorted by
+count, descending), :main-dev is the author with the most
+commits and :last-touch the most recent date.  Merge commits
+list no files, so they count for nothing.
+
+>> (let ((m (code-compass--parse-git-log-metrics
+            \"--1a2b3c--2026-01-02--andi\nsrc/a.el\n--2b3c4d--2026-01-04--andi\nsrc/a.el\n--4d5e6f--2026-01-03--bob\nsrc/a.el\nsrc/b.el\")))
+     (list (plist-get (gethash \"src/a.el\" m) :revisions)
+           (plist-get (gethash \"src/a.el\" m) :main-dev)
+           (plist-get (gethash \"src/a.el\" m) :last-touch)))
+=> (3 \"andi\" \"2026-01-04\")"
+  (let ((table (make-hash-table :test #'equal))
+        (author nil) (date ""))
+    (dolist (line (split-string log "\n" t))
+      (if (string-match "\\`--[0-9a-f]+--\\([0-9][0-9-]*\\)--\\(.*\\)\\'" line)
+          (let ((new-date (match-string 1 line))
+                (new-author (match-string 2 line)))
+            (if (and ignore-regexp (string-match-p ignore-regexp new-author))
+                ;; skip this commit's files entirely
+                (setq author nil)
+              (setq date new-date author new-author)))
+        ;; a file line of the current commit
+        (when author
+          (let ((entry (or (gethash line table)
+                           (puthash line
+                                    (list :revisions 0 :authors nil
+                                          :main-dev nil :last-touch "")
+                                    table))))
+            (plist-put entry :revisions (1+ (plist-get entry :revisions)))
+            (let ((prior (assoc author (plist-get entry :authors))))
+              (if prior
+                  (setcdr prior (1+ (cdr prior)))
+                (plist-put entry :authors
+                           (cons (cons author 1)
+                                 (plist-get entry :authors)))))
+            (when (string< (plist-get entry :last-touch) date)
+              (plist-put entry :last-touch date))))))
+    (maphash (lambda (path entry)
+               (let ((sorted (-sort (lambda (a b) (> (cdr a) (cdr b)))
+                                    (plist-get entry :authors))))
+                 (plist-put entry :authors sorted)
+                 (plist-put entry :main-dev (caar sorted))))
+             table)
+    table))
+
+(defun code-compass-file-metrics (repository &optional since)
+  "Return per-file history metrics of REPOSITORY as a hash table.
+Runs one `git log --all --name-only --no-renames' limited to
+SINCE (any `--since' value git accepts; default \"12 months\")
+and parses it in pure Elisp.  No blob contents are read, so this
+works on partial clones (`git clone --filter=blob:none') too.
+Each path maps to the plist documented in
+`code-compass--parse-git-log-metrics'.  This is the Elisp-data
+counterpart of the code-maat revisions and main-dev analyses:
+use it when you want the numbers, not the diagram."
+  (let ((log (with-temp-buffer
+               (apply #'call-process "git" nil t nil
+                      `("-C" ,(expand-file-name repository)
+                        "log" "--all" "--name-only" "--no-renames"
+                        "--date=short" "--pretty=format:--%h--%ad--%aN"
+                        ,@(when since `("--since" ,since))))
+               (buffer-string))))
+    (code-compass--parse-git-log-metrics log)))
+
+(defun code-compass-file-complexity (file &optional indentation)
+  "Return the indentation complexity stats of FILE, nil when unreadable.
+Thin file-level wrapper over
+`code-compass-calculate-complexity-stats', which see for the
+stats plist (total, n-lines, max, mean, standard-deviation)."
+  (and (file-readable-p file)
+       (code-compass-calculate-complexity-stats
+        (code-compass--slurp file) indentation)))
+
+;;;###autoload
+(defun code-compass-show-file-metrics (repository &optional since)
+  "Show the most revised files of REPOSITORY since SINCE.
+A compact ranked table of revisions, author count, main
+developer and last touch date per file.  Use it for a quick
+hotspot feel of a repository."
+  (interactive
+   (list (read-directory-name "Choose git repository directory:" (vc-root-dir))
+         (read-string "Since: " "12 months")))
+  (let ((metrics (code-compass-file-metrics repository since))
+        (rows nil))
+    (maphash (lambda (path p) (push (cons path p) rows)) metrics)
+    (with-current-buffer (get-buffer-create "*code-compass-file-metrics*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "# %s: most revised files since %s\n\n"
+                        repository (or since "12 months")))
+        (--each (-take 25
+                       (-sort (lambda (a b)
+                                (> (plist-get (cdr a) :revisions)
+                                   (plist-get (cdr b) :revisions)))
+                              rows))
+          (let ((p (cdr it)))
+            (insert (format "%4d  %3d  %-16s %s  %s\n"
+                            (plist-get p :revisions)
+                            (length (plist-get p :authors))
+                            (or (plist-get p :main-dev) "")
+                            (or (plist-get p :last-touch) "")
+                            (car it)))))
+        (pop-to-buffer (current-buffer)))))
+  repository)
+(define-obsolete-function-alias 'c/show-file-metrics #'code-compass-show-file-metrics "0.1.2")
+
+;; END file metrics
+
 (provide 'code-compass)
 
 ;;; code-compass.el ends here
